@@ -4,7 +4,8 @@
   "private": true,
   "scripts": {
     "start": "docusaurus start",
-    "build": "docusaurus build",
+    "build": "docusaurus build && node scripts/verify-discovery.mjs",
+    "verify:discovery": "node scripts/verify-discovery.mjs",
     "serve": "docusaurus serve",
     "typecheck": "tsc --noEmit"
   },
@@ -24,6 +25,7 @@
     "@docusaurus/tsconfig": "3.10.2",
     "@docusaurus/types": "3.10.2",
     "@types/react": "^19.0.0",
+    "docusaurus-plugin-llms": "0.6.1",
     "typescript": "~6.0.2"
   },
   "overrides": {

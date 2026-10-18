@@ -2,19 +2,62 @@ import {themes as prismThemes} from 'prism-react-renderer';
 import type {Config} from '@docusaurus/types';
 import type * as Preset from '@docusaurus/preset-classic';
 
+const siteUrl = 'https://www.0x3639.com/az-vote-delegate/';
+const description = 'Install az-vote-delegate on your Zenon pillar, choose a pillar to copy, and manage AZ proposal and phase-payout votes from a terminal menu.';
+const llmContext = `az-vote-delegate is a Linux terminal application and background service for Zenon Accelerator-Z voting, using a pillar producer key.
+Dry run previews without submitting; Live submits votes. Manual overrides apply to individual proposal or phase request IDs and persist locally. Dynamic Plasma is not supported.
+Start with Installation & setup for the install command, producer configuration, delegate selection, and voting mode.
+Full documentation: [llms-full.txt](${siteUrl}llms-full.txt). Source and releases: [GitHub](https://github.com/0x3639/az-vote-delegate).`;
+
 const config: Config = {
   title: 'az-vote-delegate',
   tagline: 'Copy pillar votes. Keep control of your own.',
   url: 'https://www.0x3639.com',
   baseUrl: '/az-vote-delegate/',
   trailingSlash: true,
-  favicon: 'img/az.svg',
+  favicon: 'img/favicon.ico',
   organizationName: '0x3639',
   projectName: 'az-vote-delegate',
   onBrokenLinks: 'throw',
   onBrokenAnchors: 'throw',
   markdown: {hooks: {onBrokenMarkdownLinks: 'throw'}},
   i18n: {defaultLocale: 'en', locales: ['en']},
+  headTags: [
+    {tagName: 'link', attributes: {rel: 'icon', type: 'image/svg+xml', sizes: 'any', href: `${siteUrl}img/favicon.svg`}},
+    {tagName: 'link', attributes: {rel: 'icon', type: 'image/png', sizes: '32x32', href: `${siteUrl}img/favicon-32.png`}},
+    {tagName: 'link', attributes: {rel: 'apple-touch-icon', sizes: '180x180', href: `${siteUrl}img/apple-touch-icon.png`}},
+    {tagName: 'link', attributes: {rel: 'describedby', type: 'text/plain', href: `${siteUrl}llms.txt`, title: 'Documentation index for language models'}},
+    {tagName: 'link', attributes: {rel: 'sitemap', type: 'application/xml', href: `${siteUrl}sitemap.xml`}},
+    {tagName: 'script', attributes: {type: 'application/ld+json'}, innerHTML: JSON.stringify({
+      '@context': 'https://schema.org',
+      '@type': 'WebSite',
+      '@id': `${siteUrl}#website`,
+      name: 'az-vote-delegate documentation',
+      url: siteUrl,
+      description,
+      inLanguage: 'en',
+      about: {
+        '@type': 'SoftwareSourceCode',
+        name: 'az-vote-delegate',
+        codeRepository: 'https://github.com/0x3639/az-vote-delegate',
+        programmingLanguage: 'Go',
+        license: 'https://www.gnu.org/licenses/gpl-3.0.html',
+      },
+    })},
+  ],
+  plugins: [['docusaurus-plugin-llms', {
+    docsDir: [{path: 'docs', routeBasePath: '/', label: 'Guides'}],
+    title: 'az-vote-delegate documentation',
+    description,
+    generateLLMsTxt: true,
+    generateLLMsFullTxt: true,
+    generateMarkdownFiles: true,
+    includeOrder: ['getting-started.md', 'delegation.md', 'manual-voting.md', 'updates.md', 'service.md', 'troubleshooting.md', 'commands.md'],
+    excludeImports: true,
+    removeDuplicateHeadings: true,
+    rootContent: llmContext,
+    fullRootContent: llmContext,
+  }]],
   presets: [['classic', {
     docs: {
       sidebarPath: './sidebars.ts',
@@ -23,7 +66,7 @@ const config: Config = {
     },
     blog: false,
     theme: {customCss: './src/css/custom.css'},
-    sitemap: {changefreq: 'weekly', priority: 0.6},
+    sitemap: {changefreq: 'weekly', priority: 0.6, ignorePatterns: ['**/search/**']},
   } satisfies Preset.Options]],
   themes: [['@easyops-cn/docusaurus-search-local', {
     hashed: 'filename',
@@ -35,7 +78,19 @@ const config: Config = {
     searchBarShortcutHint: true,
   }]],
   themeConfig: {
-    metadata: [{name: 'description', content: 'Install az-vote-delegate on your Zenon pillar, choose a pillar to copy, and manage AZ proposal and phase-payout votes from a terminal menu.'}],
+    image: 'img/social-card.png',
+    metadata: [
+      {name: 'theme-color', content: '#151515'},
+      {name: 'twitter:card', content: 'summary_large_image'},
+      {name: 'twitter:image:alt', content: 'az-vote-delegate — Copy pillar votes. Keep control of your own. Green connected pillars on a dark background.'},
+      {property: 'og:site_name', content: 'az-vote-delegate documentation'},
+      {property: 'og:type', content: 'website'},
+      {property: 'og:locale', content: 'en_US'},
+      {property: 'og:image:width', content: '1730'},
+      {property: 'og:image:height', content: '909'},
+      {property: 'og:image:type', content: 'image/png'},
+      {property: 'og:image:alt', content: 'az-vote-delegate — Copy pillar votes. Keep control of your own. Green connected pillars on a dark background.'},
+    ],
     colorMode: {defaultMode: 'dark', respectPrefersColorScheme: false},
     navbar: {
       title: 'az-vote-delegate',
@@ -53,7 +108,7 @@ const config: Config = {
       links: [
         {title: 'Get started', items: [{label: 'Quick start', to: '/'}, {label: 'Installation & setup', to: '/getting-started'}, {label: 'Choose a delegate', to: '/delegation'}]},
         {title: 'Manage your votes', items: [{label: 'Manual votes & phases', to: '/manual-voting'}, {label: 'Updates', to: '/updates'}, {label: 'Service & troubleshooting', to: '/service'}]},
-        {title: 'Project', items: [{label: 'Command reference', to: '/commands'}, {label: 'GitHub', href: 'https://github.com/0x3639/az-vote-delegate'}, {label: 'Releases', href: 'https://github.com/0x3639/az-vote-delegate/releases'}]},
+        {title: 'Project', items: [{label: 'Command reference', to: '/commands'}, {label: 'For AI tools (llms.txt)', href: `${siteUrl}llms.txt`}, {label: 'All docs as text', href: `${siteUrl}llms-full.txt`}, {label: 'GitHub', href: 'https://github.com/0x3639/az-vote-delegate'}, {label: 'Releases', href: 'https://github.com/0x3639/az-vote-delegate/releases'}]},
       ],
       copyright: 'az-vote-delegate · Community tooling for Zenon, Network of Momentum · GPL-3.0',
     },

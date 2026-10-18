@@ -1,0 +1,7 @@
+Built-in image_gen generation prompt. Original output saved unchanged as static/img/social-card.png (1730 × 909).
+
+Use case: ads-marketing.
+Asset type: final Open Graph social-sharing card for az-vote-delegate documentation, landscape exactly 1200 x 630 pixels (1.905:1).
+Create a polished cool dark geometric editorial graphic following Zenon Network of Momentum design: flat near-black #151515 background, precision neon-green #00d557 geometric pillar forms and fine blue #0061eb connection lines confined to the right third, one larger pillar with lines linking two smaller pillars symbolizing delegated votes. Minimal dimensional depth, restrained luminous edges, no decorative background gradient, no stock photos, coins, charts, mascots or invented logos.
+Left two-thirds: very legible typography resembling Space Grotesk. Large bold off-white headline exactly "az-vote-delegate" on one line. Under it, medium off-white text on two lines exactly "Copy pillar votes." and "Keep control of your own." Small uppercase JetBrains Mono style label near top left exactly "ZENON · ACCELERATOR-Z". Bottom left small mono text exactly "INSTALL → SET UP → DELEGATE".
+Generous 72px safe margin around all text. Clean professional technical brand, strong social-thumbnail readability, deliberate asymmetric composition. Do not draw a website screenshot, browser frame, or rounded UI cards. No text beyond that specified. Opaque background.
