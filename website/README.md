@@ -64,8 +64,9 @@ are added later, permit `/az-vote-delegate/` for the intended crawlers and add:
 Sitemap: https://www.0x3639.com/az-vote-delegate/sitemap.xml
 ```
 
-The generated social artwork is `static/img/social-card.png` (1730 × 909, PNG),
-created with the built-in image generation tool. Its exact prompt is preserved
+The generated social artwork is `static/img/social-card.jpg` (1730 × 909, progressive JPEG),
+created with the built-in image generation tool and compressed to 150 KB. The build
+checks that it stays below 500 KB. Its exact prompt is preserved
 in `assets/social-card-prompt.txt`. The favicon uses the authentic AZ glyph on a
 dark tile; SVG, multi-size ICO, 32px PNG, and 180px Apple touch versions are
 committed. To regenerate the raster icons after editing `static/img/favicon.svg`,

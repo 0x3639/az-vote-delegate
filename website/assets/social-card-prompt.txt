@@ -1,4 +1,4 @@
-Built-in image_gen generation prompt. Original output saved unchanged as static/img/social-card.png (1730 × 909).
+Built-in image_gen generation prompt. Output compressed as static/img/social-card.jpg (1730 × 909, progressive JPEG, quality 88, 4:4:4 sampling, metadata stripped).
 
 Use case: ads-marketing.
 Asset type: final Open Graph social-sharing card for az-vote-delegate documentation, landscape exactly 1200 x 630 pixels (1.905:1).

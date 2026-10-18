@@ -78,7 +78,7 @@ const config: Config = {
     searchBarShortcutHint: true,
   }]],
   themeConfig: {
-    image: 'img/social-card.png',
+    image: 'img/social-card.jpg',
     metadata: [
       {name: 'theme-color', content: '#151515'},
       {name: 'twitter:card', content: 'summary_large_image'},
@@ -88,7 +88,7 @@ const config: Config = {
       {property: 'og:locale', content: 'en_US'},
       {property: 'og:image:width', content: '1730'},
       {property: 'og:image:height', content: '909'},
-      {property: 'og:image:type', content: 'image/png'},
+      {property: 'og:image:type', content: 'image/jpeg'},
       {property: 'og:image:alt', content: 'az-vote-delegate — Copy pillar votes. Keep control of your own. Green connected pillars on a dark background.'},
     ],
     colorMode: {defaultMode: 'dark', respectPrefersColorScheme: false},
