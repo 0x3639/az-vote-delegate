@@ -8,6 +8,32 @@ owner's stake key. The menu works over SSH.
 **Compatibility:** v0.2.0 supports the legacy fused-plasma / proof-of-work voting
 flow. Dynamic Plasma is not supported by this release.
 
+## TL;DR — quick start
+
+On your Linux pillar host, install the app and open setup:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/0x3639/az-vote-delegate/main/install.sh | sudo sh
+```
+
+Use the user who owns your producer key; omit `sudo` if your node runs as an
+unprivileged user.
+
+1. **Set up:** confirm your node URL and chain ID, approve the background service,
+   and select your existing znnd configuration or producer key file.
+2. **Choose a pillar to copy:** pick from the shuffled top 30 voters, using the
+   participation figures to help you choose. Save the setup.
+3. **Enable copy voting:** the service starts in dry-run mode. Select
+   **Pause / enable live voting** and confirm to start copying that pillar's
+   votes on AZ proposals and phase-payout requests.
+
+You can close the menu; the service keeps running. Reopen it anytime to change
+your delegate or vote manually:
+
+```sh
+sudo az-vote-delegate
+```
+
 ## Install
 
 On a Linux amd64 or arm64 pillar host:
