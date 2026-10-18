@@ -1,0 +1,47 @@
+.hero { padding: 1.5rem 0; text-align: center; border-bottom: 1px solid var(--border); }
+.hero h1 { font-size: clamp(2rem, 5vw, 3rem); margin: 0.6rem 0 0.5rem; overflow-wrap: anywhere; }
+.lead { font-size: clamp(1.15rem, 2.6vw, 1.6rem); margin: 0 0 0.6rem; }
+.intro { color: var(--muted-foreground); margin-bottom: 0; }
+.quickstart { max-width: 1120px; padding-top: 1.5rem; padding-bottom: 3.5rem; }
+.sectionHeading { display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; }
+.sectionHeading h2 { font-size: 1.9rem; margin-bottom: 0.6rem; }
+.sectionHeading p, .requirements { color: var(--muted-foreground); }
+.requirements { font-size: 0.9rem; margin-bottom: 1.5rem; max-width: 60rem; }
+.requirements strong { font-weight: 500; color: var(--foreground); }
+.install, .step, .reopen, .guide { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow-sm); }
+.install { padding: 1.75rem 2rem 1.3rem; scroll-margin-top: 5rem; }
+.install pre { font-size: 0.8rem; }
+.stepTitle { display: flex; gap: 1rem; align-items: center; margin-bottom: 1rem; }
+.stepTitle p { margin: 0 0 0.2rem; }
+.stepTitle h3 { margin: 0; font-size: 1.3rem; }
+.number { font-family: var(--font-mono); font-variant-numeric: tabular-nums; color: var(--ifm-menu-color-active); background: var(--accent); border: 1px solid var(--border); border-radius: var(--radius); display: grid; place-items: center; min-width: 2.7rem; height: 2.7rem; font-size: 0.9rem; }
+.caption { font-size: 0.8rem; color: var(--muted-foreground); margin: 0; }
+.steps { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; margin-top: 1.25rem; }
+.step { padding: 1.75rem 2rem; min-width: 0; }
+.step ol { padding-left: 1.2rem; }
+.step li { margin-bottom: 0.7rem; }
+.step p, .step li { font-size: 0.95rem; }
+.step code { overflow-wrap: anywhere; }
+.step > a { font-size: 0.85rem; }
+.mode { margin-bottom: 1rem; }
+.mode strong { font-size: 0.95rem; }
+.mode p { color: var(--muted-foreground); margin: 0.2rem 0 0; }
+.reopen { margin-top: 1.25rem; padding: 1.6rem 2rem; display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; align-items: center; }
+.reopen h3 { font-size: 1.3rem; }
+.reopen p { color: var(--muted-foreground); margin-bottom: 0.5rem; }
+.reopenCommand { min-width: 0; }
+.more { margin-top: 2.5rem; display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.25rem; }
+.guide { padding: 1.4rem; color: var(--foreground); transition: border-color 150ms; }
+.guide:hover { color: var(--foreground); text-decoration: none; border-color: var(--primary); }
+.guide h3 { font-size: 1.05rem; line-height: 1.4; }
+.guide h3 span { color: var(--ifm-link-color); }
+.guide p:last-child { color: var(--muted-foreground); font-size: 0.875rem; margin-bottom: 0; }
+@media (max-width: 996px) { .more { grid-template-columns: 1fr; } }
+@media (max-width: 700px) {
+  .steps, .reopen { grid-template-columns: 1fr; }
+  .sectionHeading { display: block; }
+  .install, .step, .reopen { padding: 1.25rem; }
+  .hero { padding: 2rem 0; }
+  .reopen { gap: 0.6rem; }
+  .quickstart { padding-top: 1.75rem; }
+}
