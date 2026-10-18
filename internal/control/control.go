@@ -28,22 +28,24 @@ type Delegation struct {
 	Follow string
 }
 type Snapshot struct {
-	Live        bool
-	ChainID     uint64
-	Delegations []Delegation
-	Rows        []delegate.Row
-	State       *delegate.State
-	Updated     time.Time
-	Error       string
+	CopyDelayMinutes int
+	Live             bool
+	ChainID          uint64
+	Delegations      []Delegation
+	Rows             []delegate.Row
+	State            *delegate.State
+	Updated          time.Time
+	Error            string
 }
 type Request struct {
-	Action      string
-	Pillar      string
-	ID          string
-	Vote        string
-	Follow      string
-	Live        bool
-	OnlyUnvoted bool
+	CopyDelayMinutes int
+	Action           string
+	Pillar           string
+	ID               string
+	Vote             string
+	Follow           string
+	Live             bool
+	OnlyUnvoted      bool
 }
 type Response struct {
 	Snapshot   *Snapshot            `json:"snapshot,omitempty"`
@@ -109,7 +111,7 @@ func Run(ctx context.Context, path string, c config.Config, keys node.Keys, dry 
 	}
 	c.Live = !dry
 	m := &Manager{readConfig: config.Config{NodeURL: c.NodeURL, ChainID: c.ChainID}, cfg: c, path: path, keys: keys, log: log, wake: make(chan struct{}, 1), fatal: make(chan error, 1)}
-	m.engine = &delegate.Engine{State: state, Save: func(s *delegate.State) error { return delegate.SaveState(c.StatePath, s) }, Log: log, PollInterval: c.PollInterval(), PowTimeout: c.PowTimeout(), DryRun: dry}
+	m.engine = &delegate.Engine{State: state, Save: func(s *delegate.State) error { return delegate.SaveState(c.StatePath, s) }, Log: log, CopyDelay: c.CopyDelay(), PollInterval: c.PollInterval(), PowTimeout: c.PowTimeout(), DryRun: dry}
 	if !dry {
 		if err = m.engine.Save(state); err != nil {
 			return err
@@ -199,7 +201,7 @@ func (m *Manager) snapshot(rows []delegate.Row, err error) {
 	if rows != nil {
 		m.lastRows = rows
 	}
-	s := Snapshot{Live: !m.engine.DryRun, ChainID: m.cfg.ChainID, Rows: m.lastRows, State: m.engine.State, Updated: time.Now().UTC()}
+	s := Snapshot{CopyDelayMinutes: m.cfg.CopyDelayMinutes, Live: !m.engine.DryRun, ChainID: m.cfg.ChainID, Rows: m.lastRows, State: m.engine.State, Updated: time.Now().UTC()}
 	for _, d := range m.cfg.Delegations {
 		s.Delegations = append(s.Delegations, Delegation{Pillar: d.PillarName, Follow: d.Follow})
 	}
@@ -333,6 +335,20 @@ func (m *Manager) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 }
 func (m *Manager) command(ctx context.Context, req Request) (Response, error) {
+	if req.Action == "delay" {
+		if err := config.ValidateCopyDelay(req.CopyDelayMinutes); err != nil {
+			return Response{}, err
+		}
+		next := m.cfg
+		next.CopyDelayMinutes = req.CopyDelayMinutes
+		if err := config.Save(m.path, next); err != nil {
+			return Response{}, err
+		}
+		m.cfg = next
+		m.engine.CopyDelay = next.CopyDelay()
+		m.snapshot(nil, nil)
+		return Response{Message: "Copy delay saved. Applies to waiting and future copied votes; manual votes are not delayed."}, nil
+	}
 	if req.Action == "mode" && !req.Live {
 		next := m.cfg
 		next.Live = false

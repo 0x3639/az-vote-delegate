@@ -15,12 +15,14 @@ type Row struct {
 	Votable         Votable
 	Owner, Delegate *Vote
 	Action          string
+	CopyAfter       time.Time
 }
 type Engine struct {
 	Backend      Backend
 	State        *State
 	Save         func(*State) error
 	Log          *slog.Logger
+	CopyDelay    time.Duration
 	PollInterval time.Duration
 	PowTimeout   time.Duration
 	DryRun       bool
@@ -111,6 +113,7 @@ func (e *Engine) Reconcile(ctx context.Context, ds []config.Delegation) ([]Row, 
 			}
 			row := Row{Pillar: d.PillarName, Follow: d.Follow, Votable: v, Owner: a, Delegate: b}
 			if entry.Pending != nil {
+				entry.CopyObservation = nil
 				// Wait for the contract's receive block before treating an absent or old
 				// vote as a reset. Publishing a send block is not contract execution.
 				done, err := e.Backend.Executed(ctx, entry.Pending.BlockHash)
@@ -153,6 +156,11 @@ func (e *Engine) Reconcile(ctx context.Context, ds []config.Delegation) ([]Row, 
 					return rows, err
 				}
 			}
+			// A disappeared daemon vote indicates a reset round, even if the
+			// delegate has already voted the same way again.
+			if entry.Cast != nil && a == nil {
+				entry.CopyObservation = nil
+			}
 			previousOverride := entry.OwnerOverride
 			target := b
 			manual := entry.ManualVote != nil
@@ -176,6 +184,19 @@ func (e *Engine) Reconcile(ctx context.Context, ds []config.Delegation) ([]Row, 
 			} else {
 				row.Action = Decide(entry, a, b)
 			}
+			if manual || row.Action != "mirror" || e.CopyDelay == 0 {
+				entry.CopyObservation = nil
+			} else {
+				o := entry.CopyObservation
+				if o == nil || o.Follow != d.Follow || o.Vote != *b {
+					o = &CopyObservation{Follow: d.Follow, Vote: *b, ObservedAt: e.now()}
+					entry.CopyObservation = o
+				}
+				row.CopyAfter = o.ObservedAt.Add(e.CopyDelay)
+				if e.now().Before(row.CopyAfter) {
+					row.Action = "waiting-delay"
+				}
+			}
 			if row.Action == "mirror" && e.now().Before(entry.RetryAt) {
 				row.Action = "backoff"
 			}
@@ -194,6 +215,7 @@ func (e *Engine) Reconcile(ctx context.Context, ds []config.Delegation) ([]Row, 
 					guard := func() error { return e.guard(sendCtx, d, v.ID, entry, a, b, manual) }
 					journal := func(hash string) error {
 						entry.Pending = &Pending{Vote: *target, BlockHash: hash, At: e.now()}
+						entry.CopyObservation = nil
 						return e.persist()
 					}
 					err = e.Backend.Send(sendCtx, d, v.ID, *target, guard, journal)
@@ -268,6 +290,10 @@ func (e *Engine) guard(ctx context.Context, d config.Delegation, id string, entr
 		return ErrChanged
 	}
 	if !manual && !Equal(bv[id], b) {
+		entry.CopyObservation = nil
+		if err := e.persist(); err != nil {
+			return err
+		}
 		return ErrChanged
 	}
 	return ctx.Err()
@@ -277,7 +303,7 @@ func (e *Engine) log(row Row, previousOverride bool) {
 		return
 	}
 	level := slog.LevelInfo
-	if row.Action == "in-sync" || row.Action == "no-delegate-vote" || row.Action == "pending" || row.Action == "backoff" || ((row.Action == "owner-override" || row.Action == "manual-override") && previousOverride) {
+	if row.Action == "in-sync" || row.Action == "no-delegate-vote" || row.Action == "pending" || row.Action == "backoff" || row.Action == "waiting-delay" || ((row.Action == "owner-override" || row.Action == "manual-override") && previousOverride) {
 		level = slog.LevelDebug
 	}
 	vote := row.Delegate

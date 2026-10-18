@@ -125,7 +125,7 @@ func Run(ctx context.Context, path, version string) error {
 			mode = "LIVE — votes can be published"
 		}
 		action := ""
-		options := []huh.Option[string]{huh.NewOption("Vote on unanswered AZ proposals", "projects"), huh.NewOption("Vote on unanswered phase payouts", "phases"), huh.NewOption("Choose pillar to copy", "follow"), huh.NewOption("Pending transactions & manual overrides", "activity"), huh.NewOption("Voting mode: Dry run / Live", "mode"), updates.option(), huh.NewOption("Refresh", "refresh"), huh.NewOption("Exit (service keeps running)", "exit")}
+		options := []huh.Option[string]{huh.NewOption("Vote on unanswered AZ proposals", "projects"), huh.NewOption("Vote on unanswered phase payouts", "phases"), huh.NewOption("Choose pillar to copy", "follow"), huh.NewOption(fmt.Sprintf("Copy vote delay: %d minutes", s.CopyDelayMinutes), "delay"), huh.NewOption("Pending transactions & manual overrides", "activity"), huh.NewOption("Voting mode: Dry run / Live", "mode"), updates.option(), huh.NewOption("Refresh", "refresh"), huh.NewOption("Exit (service keeps running)", "exit")}
 		description := fmt.Sprintf("%s  ·  Chain %d\n%s\n", mode, s.ChainID, updates.notice())
 		for _, d := range s.Delegations {
 			description += Clean(d.Pillar) + " follows " + Clean(d.Follow) + "\n"
@@ -148,6 +148,8 @@ func Run(ctx context.Context, path, version string) error {
 			err = follow(ctx, c, s)
 		case "activity":
 			err = activity(ctx, c, s)
+		case "delay":
+			err = changeDelay(ctx, c, s.CopyDelayMinutes)
 		case "mode":
 			err = changeMode(ctx, c, s.Live)
 		case "upgrade":
@@ -303,6 +305,11 @@ func voteRequest(ctx context.Context, c config.Config, s *control.Snapshot, r de
 func activity(ctx context.Context, c config.Config, s *control.Snapshot) error {
 	for {
 		lines := []string{}
+		for _, row := range s.Rows {
+			if row.Action == "waiting-delay" {
+				lines = append(lines, fmt.Sprintf("%s · %s\nCopy %s from %s after %s", Clean(row.Pillar), row.Votable.ID, delegate.VoteText(row.Delegate), Clean(row.Follow), row.CopyAfter.UTC().Format(time.RFC3339)))
+			}
+		}
 		if s.State != nil {
 			for pillar, entries := range s.State.Pillars {
 				for id, e := range entries {
@@ -324,7 +331,7 @@ func activity(ctx context.Context, c config.Config, s *control.Snapshot) error {
 		sort.Strings(lines)
 		body := strings.Join(lines, "\n\n")
 		if body == "" {
-			body = "No pending submissions or manual overrides."
+			body = "No delayed votes, pending submissions or manual overrides."
 		}
 		// Keep resume available after a manual vote leaves the unanswered list.
 		type target struct{ pillar, id string }
@@ -469,6 +476,10 @@ func Wizard(ctx context.Context, path string) (err error) {
 	if err = n.Check(ctx); err != nil {
 		return err
 	}
+	c.CopyDelayMinutes, err = chooseDelay(ctx, 0)
+	if err != nil {
+		return err
+	}
 	c.Live, err = chooseMode(ctx, false, "Cancel setup")
 	if err != nil {
 		return err
@@ -480,7 +491,7 @@ func Wizard(ctx context.Context, path string) (err error) {
 		button = "Save and start"
 		service = "Background service: install and start after saving."
 	}
-	details := fmt.Sprintf("%s follows %s.\n%s\n%s\n\nYour producer password will be saved locally in a file restricted to this account, so the service can unlock your producer key.", Clean(d.PillarName), Clean(d.Follow), modeDescription(c.Live), service)
+	details := fmt.Sprintf("%s follows %s.\n%s\n%s\n\nYour producer password will be saved locally in a file restricted to this account, so the service can unlock your producer key.", Clean(d.PillarName), Clean(d.Follow), modeDescription(c.Live)+fmt.Sprintf("\nCopy vote delay: %d minutes.", c.CopyDelayMinutes), service)
 	err = form(ctx, huh.NewConfirm().Title("Save setup in "+modeName(c.Live)+" mode?").Description(details).Affirmative(button).Negative("Cancel").Value(&ok))
 	if err != nil || !ok {
 		if err == nil {

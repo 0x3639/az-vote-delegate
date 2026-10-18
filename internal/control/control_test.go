@@ -229,3 +229,55 @@ func TestUnansweredMenuRejectsVoteCompletedSinceListing(t *testing.T) {
 		t.Fatalf("unanswered phase could not be voted on: %+v", res)
 	}
 }
+
+func TestCopyDelaySavedAndAppliedWithoutRestart(t *testing.T) {
+	m, f := manager(t)
+	m.cfg.NodeURL = "http://127.0.0.1:1"
+	m.cfg.Delegations[0].ProducerKeyFile = filepath.Join(t.TempDir(), "unused-key")
+	m.cfg.Delegations[0].PasswordEnv = "UNUSED_TEST_PASSWORD"
+	response := command(t, m, Request{Action: "delay", CopyDelayMinutes: 15})
+	if response.Error != "" {
+		t.Fatal(response.Error)
+	}
+	saved, err := config.Load(m.path)
+	if err != nil || saved.CopyDelayMinutes != 15 || m.engine.CopyDelay != 15*time.Minute {
+		t.Fatal(saved, err)
+	}
+	if err = m.poll(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	if f.sends != 0 || m.lastRows[0].Action != "waiting-delay" {
+		t.Fatal("delay was not applied")
+	}
+	response = command(t, m, Request{Action: "delay", CopyDelayMinutes: 0})
+	if response.Error != "" {
+		t.Fatal(response.Error)
+	}
+	if err = m.poll(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	if f.sends != 1 {
+		t.Fatal("clearing delay did not release waiting vote")
+	}
+}
+
+func TestCopyDelayValidationAndSaveFailureLeaveSettingUnchanged(t *testing.T) {
+	m, _ := manager(t)
+	m.factory = func(config.Config) (backend, error) { return nil, errors.New("offline") }
+	// Changing a local timing setting must work without a node connection.
+	if response := command(t, m, Request{Action: "delay", CopyDelayMinutes: 30}); response.Error != "" {
+		t.Fatal(response.Error)
+	}
+	for _, minutes := range []int{-1, 10081} {
+		if response := command(t, m, Request{Action: "delay", CopyDelayMinutes: minutes}); response.Error == "" {
+			t.Fatal("invalid delay accepted")
+		}
+	}
+	m.path = filepath.Dir(m.path) // Cannot replace a directory with a config file.
+	if response := command(t, m, Request{Action: "delay", CopyDelayMinutes: 5}); response.Error == "" {
+		t.Fatal("failed save acknowledged")
+	}
+	if m.cfg.CopyDelayMinutes != 30 || m.engine.CopyDelay != 30*time.Minute {
+		t.Fatal("failed command changed running setting")
+	}
+}

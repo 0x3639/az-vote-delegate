@@ -22,6 +22,7 @@ type Delegation struct {
 }
 
 type Config struct {
+	CopyDelayMinutes    int          `json:"copyDelayMinutes"`
 	Live                bool         `json:"live"`
 	NodeURL             string       `json:"nodeUrl"`
 	ChainID             uint64       `json:"chainId"`
@@ -30,6 +31,14 @@ type Config struct {
 	StatePath           string       `json:"statePath"`
 	Delegations         []Delegation `json:"delegations"`
 }
+
+func ValidateCopyDelay(minutes int) error {
+	if minutes < 0 || minutes > 10080 {
+		return errors.New("copyDelayMinutes must be 0..10080 (up to 7 days)")
+	}
+	return nil
+}
+func (c Config) CopyDelay() time.Duration { return time.Duration(c.CopyDelayMinutes) * time.Minute }
 
 func (c Config) PollInterval() time.Duration {
 	return time.Duration(c.PollIntervalSeconds) * time.Second
@@ -61,6 +70,9 @@ func Load(path string) (Config, error) {
 	}
 	if c.PollIntervalSeconds < 1 || c.PollIntervalSeconds > 86400 || c.PowTimeoutSeconds < 1 || c.PowTimeoutSeconds > 3600 {
 		return c, errors.New("pollIntervalSeconds must be 1..86400; powTimeoutSeconds must be 1..3600")
+	}
+	if err := ValidateCopyDelay(c.CopyDelayMinutes); err != nil {
+		return c, err
 	}
 	if c.StatePath == "" || len(c.Delegations) == 0 {
 		return c, errors.New("statePath and at least one delegation are required")

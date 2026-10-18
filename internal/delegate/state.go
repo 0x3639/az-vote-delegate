@@ -37,6 +37,12 @@ func LoadState(path string, chainID uint64) (*State, error) {
 	}
 	for _, entries := range s.Pillars {
 		for id, e := range entries {
+			if e != nil && e.CopyObservation != nil {
+				o := e.CopyObservation
+				if o.Follow == "" || !o.Vote.Valid() || o.ObservedAt.IsZero() {
+					return nil, errors.New("invalid copy observation")
+				}
+			}
 			if !validHash(id) || e == nil || (e.Cast != nil && !e.Cast.Valid()) || (e.ManualVote != nil && !e.ManualVote.Valid()) || (e.ManualConfirmed && e.ManualVote == nil) || e.Failures < 0 || e.Failures > 32 || (e.BlockHash != "" && !validHash(e.BlockHash)) || (e.Pending != nil && (!e.Pending.Vote.Valid() || !validHash(e.Pending.BlockHash) || e.Pending.At.IsZero())) {
 				return nil, errors.New("invalid state entry")
 			}

@@ -18,6 +18,11 @@ func TestConfigDefaultsAndValidation(t *testing.T) {
 		bad  bool
 	}{
 		{"defaults", func(map[string]any) {}, false},
+		{"delay disabled", func(m map[string]any) { m["copyDelayMinutes"] = 0 }, false},
+		{"delay enabled", func(m map[string]any) { m["copyDelayMinutes"] = 10080 }, false},
+		{"negative delay", func(m map[string]any) { m["copyDelayMinutes"] = -1 }, true},
+		{"excessive delay", func(m map[string]any) { m["copyDelayMinutes"] = 10081 }, true},
+		{"fractional delay", func(m map[string]any) { m["copyDelayMinutes"] = 0.5 }, true},
 		{"missing chain", func(m map[string]any) { delete(m, "chainId") }, true},
 		{"bad scheme", func(m map[string]any) { m["nodeUrl"] = "file:///tmp/node" }, true},
 		{"negative interval", func(m map[string]any) { m["pollIntervalSeconds"] = -1 }, true},

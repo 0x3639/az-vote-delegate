@@ -4,6 +4,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 )
 
 func TestStateRoundTripAndLostFile(t *testing.T) {
@@ -50,4 +51,22 @@ func TestStateLock(t *testing.T) {
 		t.Fatal(err)
 	}
 	unlock()
+}
+
+func TestInvalidCopyObservationRejected(t *testing.T) {
+	for _, observation := range []*CopyObservation{
+		{Follow: "B", Vote: Vote(3), ObservedAt: time.Now()},
+		{Follow: "", Vote: Yes, ObservedAt: time.Now()},
+		{Follow: "B", Vote: Yes},
+	} {
+		path := filepath.Join(t.TempDir(), "state.json")
+		s := NewState(1)
+		s.Entries("A")[testID] = &Entry{CopyObservation: observation}
+		if err := SaveState(path, s); err != nil {
+			t.Fatal(err)
+		}
+		if _, err := LoadState(path, 1); err == nil {
+			t.Fatal("invalid observation accepted")
+		}
+	}
 }

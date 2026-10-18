@@ -75,16 +75,26 @@ var ErrRejected = errors.New("node rejected publish")
 var ErrChanged = errors.New("chain state changed during preparation; reconsider next poll")
 var ErrPersistence = errors.New("cannot persist state; stopping")
 
+// CopyObservation records when this source vote first needed copying. Its due
+// time is computed from the current setting, so changing the delay applies to
+// votes already waiting without losing their original observation time.
+type CopyObservation struct {
+	Follow     string    `json:"follow"`
+	Vote       Vote      `json:"vote"`
+	ObservedAt time.Time `json:"observedAt"`
+}
+
 type Entry struct {
-	Cast            *Vote     `json:"cast,omitempty"`
-	BlockHash       string    `json:"blockHash,omitempty"`
-	At              time.Time `json:"at,omitempty"`
-	OwnerOverride   bool      `json:"ownerOverride,omitempty"`
-	ManualVote      *Vote     `json:"manualVote,omitempty"`
-	ManualConfirmed bool      `json:"manualConfirmed,omitempty"`
-	Pending         *Pending  `json:"pending,omitempty"`
-	Failures        int       `json:"failures,omitempty"`
-	RetryAt         time.Time `json:"retryAt,omitempty"`
+	CopyObservation *CopyObservation `json:"copyObservation,omitempty"`
+	Cast            *Vote            `json:"cast,omitempty"`
+	BlockHash       string           `json:"blockHash,omitempty"`
+	At              time.Time        `json:"at,omitempty"`
+	OwnerOverride   bool             `json:"ownerOverride,omitempty"`
+	ManualVote      *Vote            `json:"manualVote,omitempty"`
+	ManualConfirmed bool             `json:"manualConfirmed,omitempty"`
+	Pending         *Pending         `json:"pending,omitempty"`
+	Failures        int              `json:"failures,omitempty"`
+	RetryAt         time.Time        `json:"retryAt,omitempty"`
 }
 type Pending struct {
 	Vote      Vote      `json:"vote"`

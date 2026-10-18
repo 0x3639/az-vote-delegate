@@ -1,6 +1,6 @@
 # Accelerator-Z vote delegation daemon — design
 
-Date: 2026-10-18. Status: initial design; implementation and operator UI amendments are documented in README.md.
+Date: 2026-10-18. Status: initial design; implementation and operator UI amendments are documented at https://www.0x3639.com/az-vote-delegate/.
 Source of chain facts: go-zenon `dev` at b5f93c2 (`vm/embedded/implementation/common.go`,
 `vm/embedded/implementation/accelerator.go`, `vm/embedded/definition/common.go`,
 `rpc/api/embedded/accelerator.go`). SDK facts: `github.com/0x3639/znn-sdk-go` v0.5.0
@@ -275,3 +275,16 @@ to Activity, which also offers resuming copy voting for existing overrides. The
 service rechecks that a selected request remains unanswered before queuing a
 manual choice. Explicit override persistence and pending-transaction handling
 remain unchanged underneath this menu filter.
+
+## Configurable copy delay amendment
+
+`copyDelayMinutes` defaults to zero and accepts whole minutes from 0 through 10080.
+Each request persists a source pillar, vote, and first-observed timestamp while it
+needs copying. Reconciliation waits until that timestamp plus the configured delay,
+without blocking other requests. The existing active-request and owner/delegate
+checks still run before publishing. A changed source vote, disappeared vote, observed
+round reset, or changed source pillar starts a new timer. Manual intent clears the
+timer and bypasses the delay. Live timers survive restarts; dry-run observations do
+not persist. Changing the setting applies to waiting and future copies. Timing is
+approximate because polling, PoW, retries, and outages can add time; no request is
+submitted early to beat a closing window. Public vote correlation remains possible.
