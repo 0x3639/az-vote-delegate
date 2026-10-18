@@ -3,7 +3,7 @@
 A terminal app and background service for Accelerator-Z voting. Choose a pillar
 to copy, review project proposals and phase-payout requests, or cast your own
 **yes / no / abstain** vote. Uses the existing pillar **producer key**, never the
-owner's stake key. The menu works over SSH, like NOMCTL.
+owner's stake key. The menu works over SSH.
 
 **Compatibility:** v0.2.0 supports the legacy fused-plasma / proof-of-work voting
 flow. Dynamic Plasma is not supported by this release.
@@ -22,7 +22,7 @@ Without a terminal, or with `AZ_NO_UI=1`, it installs the binary and prints the
 command to run later.
 
 Run the app as the user who owns your producer key. `sudo` is appropriate for a
-root-operated znnd/NOMCTL installation. For an unprivileged node user, install
+root-operated znnd installation. For an unprivileged node user, install
 without `sudo`; the binary goes to `~/.local/bin` and the installer prints its
 full path. Root installation uses `/usr/local/bin`.
 
