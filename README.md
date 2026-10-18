@@ -5,7 +5,7 @@ to copy, review project proposals and phase-payout requests, or cast your own
 **yes / no / abstain** vote. Uses the existing pillar **producer key**, never the
 owner's stake key. The menu works over SSH.
 
-**Compatibility:** v0.2.0 supports the legacy fused-plasma / proof-of-work voting
+**Compatibility:** v0.2.1 supports the legacy fused-plasma / proof-of-work voting
 flow. Dynamic Plasma is not supported by this release.
 
 ## TL;DR — quick start
@@ -61,7 +61,7 @@ the service. Release binaries are static: no Go compiler, C compiler, Docker,
 To pin a release:
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/0x3639/az-vote-delegate/main/install.sh | sudo env AZ_VERSION=v0.2.0 sh
+curl -fsSL https://raw.githubusercontent.com/0x3639/az-vote-delegate/main/install.sh | sudo env AZ_VERSION=v0.2.1 sh
 ```
 
 Run the installer again to upgrade, then restart the voting service. Use

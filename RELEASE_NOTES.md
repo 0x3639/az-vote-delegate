@@ -1,13 +1,9 @@
-The curl installer now opens terminal setup automatically. Setup asks for confirmation to install and start the background service, then lets the operator select a delegate.
+Improves terminal-menu readability on dark backgrounds and terminals with customized colors.
+
+- Explicit white text on a dark background for inputs, descriptions, choices, and navigation hints.
+- Bright headings and selection indicators; inactive fields stay readable.
+- High-contrast Yes/No buttons use explicit foreground/background pairs instead of the terminal's customizable ANSI palette.
+
+Voting behavior and saved configuration are unchanged. Run the curl installer again to update, then reopen the menu. The theme fix applies to the menu immediately; existing v0.2.0 background services remain compatible.
 
 **Compatibility:** This release supports the legacy fused-plasma / proof-of-work voting flow. Dynamic Plasma is not supported.
-
-- The delegate picker takes the top 30 active pillars by recorded AZ votes, excludes the operator's own pillar, and shuffles the display. Ties are shuffled before the cutoff.
-- Each pillar shows participation as a percentage and voted/total request counts. Counts include all project and phase requests retained by the node, including closed requests; they are not adjusted for pillar registration dates.
-- Manual project and phase-payout menus fetch fresh votes and show only unanswered requests. Yes, no and abstain all count as answered. Queued manual choices appear in Activity.
-- The service rechecks an unanswered request before accepting a manual vote. Activity retains the ability to resume copying after a manual override.
-- `AZ_NO_UI=1` skips automatic menu launch for scripted installations; installations without a terminal print the command to run later.
-
-The service starts in dry-run mode. Enable live voting from the menu after reviewing setup. Existing installations should restart their voting service after upgrading.
-
-Validated with offline RPC fixtures, race tests, installer pseudo-terminal tests, checksum checks, and Linux amd64/arm64 binary startup tests. No live-chain votes or operator keys were used.

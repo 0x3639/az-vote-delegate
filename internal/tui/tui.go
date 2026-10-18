@@ -18,7 +18,6 @@ import (
 	"github.com/0x3639/az-vote-delegate/internal/node"
 	"github.com/0x3639/az-vote-delegate/internal/setup"
 	"github.com/charmbracelet/huh"
-	"github.com/charmbracelet/lipgloss"
 	"github.com/charmbracelet/x/term"
 )
 
@@ -35,10 +34,7 @@ func form(ctx context.Context, fields ...huh.Field) error {
 	if err := ctx.Err(); err != nil {
 		return err
 	}
-	theme := huh.ThemeBase()
-	theme.Focused.Title = theme.Focused.Title.Foreground(lipgloss.Color("46"))
-	theme.Focused.SelectSelector = theme.Focused.SelectSelector.Foreground(lipgloss.Color("46"))
-	return huh.NewForm(huh.NewGroup(fields...)).WithTheme(theme).RunWithContext(ctx)
+	return huh.NewForm(huh.NewGroup(fields...)).WithTheme(menuTheme()).RunWithContext(ctx)
 }
 func confirm(ctx context.Context, title string) (bool, error) {
 	yes := false
