@@ -5,7 +5,7 @@ to copy, review project proposals and phase-payout requests, or cast your own
 **yes / no / abstain** vote. Uses the existing pillar **producer key**, never the
 owner's stake key. The menu works over SSH.
 
-**Compatibility:** v0.2.2 supports the legacy fused-plasma / proof-of-work voting
+**Compatibility:** v0.2.3 supports the legacy fused-plasma / proof-of-work voting
 flow. Dynamic Plasma is not supported by this release.
 
 ## TL;DR — quick start
@@ -22,10 +22,10 @@ unprivileged user.
 1. **Set up:** confirm your node URL and chain ID, approve the background service,
    and select your existing znnd configuration or producer key file.
 2. **Choose a pillar to copy:** pick from the shuffled top 30 voters, using the
-   participation figures to help you choose. Save the setup.
-3. **Enable copy voting:** the service starts in dry-run mode. Select
-   **Pause / enable live voting** and confirm to start copying that pillar's
-   votes on AZ proposals and phase-payout requests.
+   participation figures to help you choose.
+3. **Choose a voting mode:** select **Dry run** to preview without submitting
+   votes, or **Live** to copy that pillar's votes on AZ proposals and phase-payout
+   requests. Confirm **Save and start** to save setup and start the service.
 
 You can close the menu; the service keeps running. Reopen it anytime to change
 your delegate or vote manually:
@@ -61,7 +61,7 @@ the service. Release binaries are static: no Go compiler, C compiler, Docker,
 To pin a release:
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/0x3639/az-vote-delegate/main/install.sh | sudo env AZ_VERSION=v0.2.2 sh
+curl -fsSL https://raw.githubusercontent.com/0x3639/az-vote-delegate/main/install.sh | sudo env AZ_VERSION=v0.2.3 sh
 ```
 
 Run the installer again to upgrade, then restart the voting service. Use
@@ -77,12 +77,17 @@ The setup wizard guides you through:
    entering a key-file path, derivation index and password. No key is generated.
 4. Identifying your pillar and choosing a delegate from the top 30 active voters,
    shuffled and shown with their voting participation.
-5. Saving a private application config and a mode-0600 password file, then
-   installing and starting the service if you confirmed it. It starts in **dry-run**.
+5. Choosing **Dry run — preview without submitting votes** or **Live — submit
+   votes**. Dry run is selected by default.
+6. Confirming the selected mode and saving setup. The app saves a private
+   configuration and password file, then installs and starts the service if you
+   requested it. The service starts in the mode you selected.
 
-Review the proposed decisions, then select **Pause / enable live voting** to
-start publishing. The saved mode survives service restarts. Closing the menu
-leaves the service running. The original znnd configuration is never changed.
+Use **Voting mode: Dry run / Live** in the main menu to change modes later. Live
+mode submits votes; dry run only previews decisions. Switching to dry run does
+not undo transactions already submitted. The saved mode survives service
+restarts. Closing the menu leaves the service running. The original znnd
+configuration is never changed.
 
 By default, application files live under `~/.config/az-vote-delegate/`:
 `config.json`, `producer-password`, and a private `state/` directory. An existing
@@ -111,8 +116,9 @@ reconnect from the menu. The service and UI must use the same config and user.
   participation shown beside each name. Existing manual overrides stay in place.
 - **Pending transactions & manual overrides**: inspect queued choices, confirmed
   manual overrides and pending block hashes, or resume copying for an override.
-- **Pause / enable live voting**: pause new submissions without changing already
-  submitted transactions.
+- **Voting mode: Dry run / Live**: explicitly select previews only or live vote
+  submission, then confirm the change. Already submitted transactions may still
+  finish after switching to dry run.
 
 The manual lists fetch fresh votes from the node. Any recorded yes, no or abstain
 hides that request; queued manual choices also leave the list and appear in

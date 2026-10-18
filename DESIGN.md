@@ -251,8 +251,9 @@ new ID therefore starts a fresh round; an old manual override is not inherited.
 A same-ID observed vote wipe also clears a confirmed override.
 
 New state fields manualVote and manualConfirmed persist UI ownership. The live
-config field saves the operator's chosen voting mode. The installed service
-starts in dry-run until live voting is explicitly enabled. See README.md for
+config field saves the operator's chosen voting mode. Setup presents explicit
+Dry run and Live choices, defaulting to Dry run, followed by a separate save
+confirmation. The installed service starts in the confirmed mode. See README.md for
 current setup, operation and release instructions.
 
 ## 9. Installation and delegate-picker amendment (2026-10-18)

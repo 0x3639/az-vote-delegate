@@ -135,6 +135,33 @@ func TestPauseWorksWhenNodeUnavailable(t *testing.T) {
 		t.Fatal("pause failed", response)
 	}
 }
+
+func TestExplicitModesPersistAndDryRunDoesNotSubmit(t *testing.T) {
+	m, f := manager(t)
+	m.cfg.NodeURL = "http://127.0.0.1:1" // The injected backend performs all reads.
+	m.cfg.Delegations[0].ProducerKeyFile = filepath.Join(t.TempDir(), "unused-key")
+	m.cfg.Delegations[0].PasswordEnv = "UNUSED_TEST_PASSWORD"
+	for _, live := range []bool{false, true, false} {
+		before := f.sends
+		response := command(t, m, Request{Action: "mode", Live: live})
+		if response.Error != "" {
+			t.Fatal(response.Error)
+		}
+		saved, err := config.Load(m.path)
+		if err != nil || saved.Live != live || m.engine.DryRun == live {
+			t.Fatalf("mode was not saved/applied: live=%v, config=%+v, error=%v", live, saved, err)
+		}
+		if err := m.poll(context.Background()); err != nil {
+			t.Fatal(err)
+		}
+		if !live && f.sends != before {
+			t.Fatal("dry run submitted a vote")
+		}
+		if live && f.sends != before+1 {
+			t.Fatal("live mode did not submit the delegate's vote")
+		}
+	}
+}
 func TestFailedManualSaveIsFatal(t *testing.T) {
 	m, f := manager(t)
 	m.engine.Save = func(*delegate.State) error { return errors.New("disk full") }

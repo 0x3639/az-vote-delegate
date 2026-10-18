@@ -103,7 +103,7 @@ func Run(ctx context.Context, path string) error {
 			mode = "LIVE — votes can be published"
 		}
 		action := ""
-		options := []huh.Option[string]{huh.NewOption("Vote on unanswered AZ proposals", "projects"), huh.NewOption("Vote on unanswered phase payouts", "phases"), huh.NewOption("Choose pillar to copy", "follow"), huh.NewOption("Pending transactions & manual overrides", "activity"), huh.NewOption("Pause / enable live voting", "mode"), huh.NewOption("Refresh", "refresh"), huh.NewOption("Exit (service keeps running)", "exit")}
+		options := []huh.Option[string]{huh.NewOption("Vote on unanswered AZ proposals", "projects"), huh.NewOption("Vote on unanswered phase payouts", "phases"), huh.NewOption("Choose pillar to copy", "follow"), huh.NewOption("Pending transactions & manual overrides", "activity"), huh.NewOption("Voting mode: Dry run / Live", "mode"), huh.NewOption("Refresh", "refresh"), huh.NewOption("Exit (service keeps running)", "exit")}
 		description := fmt.Sprintf("%s  ·  Chain %d\n", mode, s.ChainID)
 		for _, d := range s.Delegations {
 			description += Clean(d.Pillar) + " follows " + Clean(d.Follow) + "\n"
@@ -124,15 +124,7 @@ func Run(ctx context.Context, path string) error {
 		case "activity":
 			err = activity(ctx, c, s)
 		case "mode":
-			title := "Enable live voting for projects AND phase payouts?"
-			if s.Live {
-				title = "Pause all new votes? Already submitted transactions may still finish."
-			}
-			var ok bool
-			ok, err = confirm(ctx, title)
-			if err == nil && ok {
-				_, err = control.Call(ctx, c, &control.Request{Action: "mode", Live: !s.Live})
-			}
+			err = changeMode(ctx, c, s.Live)
 		}
 		if err != nil {
 			if errors.Is(err, huh.ErrUserAborted) {
@@ -221,7 +213,7 @@ func votables(ctx context.Context, c config.Config, phases bool) error {
 		return nil
 	}
 	if !s.Live {
-		return note(ctx, "Dry-run mode", "Enable live voting from the main menu before casting or resuming votes.")
+		return note(ctx, "Dry-run mode", "Select Voting mode: Dry run / Live in the main menu and choose Live before submitting a manual vote.")
 	}
 	message := fmt.Sprintf("Vote %s on %s? This stops copy voting for this request, even if the delegate later changes their vote.", strings.ToUpper(action), Clean(v.Name))
 	yes, err := confirm(ctx, message)
@@ -313,7 +305,7 @@ func Wizard(ctx context.Context, path string) error {
 			return errors.New("enter a positive chain ID")
 		}
 		return nil
-	}), huh.NewConfirm().Title("Install and start a background service after setup?").Description("Keeps running after you close the menu. Starts in dry-run mode until you enable live voting.").Value(&installService), huh.NewSelect[string]().Title("Producer key").Options(huh.NewOption("Use existing znnd configuration", "znnd"), huh.NewOption("Choose a key file and enter its password", "file")).Value(&source)); err != nil {
+	}), huh.NewConfirm().Title("Install and start a background service after setup?").Description("Keeps running after you close the menu. You will choose Dry run or Live mode before saving.").Value(&installService), huh.NewSelect[string]().Title("Producer key").Options(huh.NewOption("Use existing znnd configuration", "znnd"), huh.NewOption("Choose a key file and enter its password", "file")).Value(&source)); err != nil {
 		return err
 	}
 	p := setup.Producer{KeyFilePath: filepath.Join(home, ".znn", "wallet", "producer")}
@@ -392,7 +384,19 @@ func Wizard(ctx context.Context, path string) error {
 	if err = n.Check(ctx); err != nil {
 		return err
 	}
-	ok, err := confirm(ctx, "Save setup in dry-run mode? The producer password will be stored in an owner-only 0600 file for the background service.")
+	c.Live, err = chooseMode(ctx, false)
+	if err != nil {
+		return err
+	}
+	ok := false
+	button := "Save setup"
+	service := "Background service: not installed by this setup."
+	if installService {
+		button = "Save and start"
+		service = "Background service: install and start after saving."
+	}
+	details := fmt.Sprintf("%s follows %s.\n%s\n%s\n\nYour producer password will be saved locally in a file restricted to this account, so the service can unlock your producer key.", Clean(d.PillarName), Clean(d.Follow), modeDescription(c.Live), service)
+	err = form(ctx, huh.NewConfirm().Title("Save setup in "+modeName(c.Live)+" mode?").Description(details).Affirmative(button).Negative("Cancel").Value(&ok))
 	if err != nil || !ok {
 		if err == nil {
 			return huh.ErrUserAborted
@@ -410,9 +414,9 @@ func Wizard(ctx context.Context, path string) error {
 		if err = setup.InstallService(path); err != nil {
 			return note(ctx, "Configuration saved; service not started", Clean(err.Error())+"\nUse the menu to retry starting the service.")
 		}
-		return note(ctx, "Setup complete — service installed", "The background service starts in dry-run mode. Review the menu, then select Pause / enable live voting to start copying project and phase-payout votes. Run az-vote-delegate anytime to reopen the menu.")
+		return note(ctx, "Setup complete — "+modeName(c.Live)+" mode", modeDescription(c.Live)+"\nThe background service is installed. Run az-vote-delegate anytime to reopen the menu and change the voting mode.")
 	}
-	return note(ctx, "Setup saved", "Service installation was skipped. Start it later from the menu, or run az-vote-delegate run in another terminal. Run az-vote-delegate anytime to reopen the menu.")
+	return note(ctx, "Setup saved — "+modeName(c.Live)+" mode", modeDescription(c.Live)+"\nService installation was skipped. Start it later from the menu, or run az-vote-delegate run in another terminal.")
 }
 
 func preview(s string, limit int) string {
