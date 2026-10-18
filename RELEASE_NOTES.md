@@ -1,10 +1,13 @@
-Fixes the patchy background in the terminal menu.
+Add a configurable delay before copying votes on AZ proposals and phase-payout requests.
 
-- Menu text, borders, help and spacing now use the terminal's own background consistently, eliminating the dark blocks and gaps visible with custom terminal colors.
-- Text and selection colors adapt to dark or light terminal backgrounds. Confirmation buttons keep their contrasting fills.
+- Set **Copy vote delay** during setup or from the main menu. Choose 0–10,080 whole minutes; 0 preserves immediate copying on existing installations.
+- Each request waits independently from when the service observes a vote that needs copying. Live-mode timers survive restarts. A changed delegate vote starts a new timer.
+- Manual votes bypass the delay and retain their per-request overrides. Other requests continue normally.
+- View waiting votes and their earliest submission times in **Pending transactions & manual overrides**. Settings apply without restarting the service.
+- The README is now a short quick start with links to the full documentation.
 
-Voting, saved settings, manual overrides and service behavior are unchanged.
+Submission occurs on a poll after the delay, subject to node availability, retries and proof of work. Requests may close before a delayed vote can be submitted. A delay does not conceal public voting patterns or guarantee privacy.
 
-From v0.2.6, choose **Check for updates / upgrade** in the main menu to install this release. Older versions can use the curl installer.
+Upgrade through **Check for updates / upgrade**, or rerun the curl installer using the original installation account. Existing configurations default to zero delay. Dry-run observations stay in memory; enabling Live reloads durable state. Config/state files written by this release contain new fields that older versions cannot read; keep a pre-upgrade backup if you need to downgrade, and preserve manual overrides.
 
-**Compatibility:** This release supports the legacy fused-plasma / proof-of-work voting flow. Dynamic Plasma is not supported.
+**Compatibility:** Legacy fused plasma / proof of work only. Dynamic Plasma is not supported.

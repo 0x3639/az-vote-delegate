@@ -11,6 +11,7 @@ import (
 	"os/signal"
 	"syscall"
 	"text/tabwriter"
+	"time"
 
 	"github.com/0x3639/az-vote-delegate/internal/config"
 	"github.com/0x3639/az-vote-delegate/internal/control"
@@ -147,7 +148,7 @@ func execute(ctx context.Context, args []string, out, stderr io.Writer) error {
 	if err = n.Check(ctx); err != nil {
 		return err
 	}
-	engine := &delegate.Engine{Backend: n, State: state, Log: log, PollInterval: c.PollInterval(), PowTimeout: c.PowTimeout(), DryRun: true}
+	engine := &delegate.Engine{Backend: n, State: state, Log: log, CopyDelay: c.CopyDelay(), PollInterval: c.PollInterval(), PowTimeout: c.PowTimeout(), DryRun: true}
 	rows, err := engine.Reconcile(ctx, c.Delegations)
 	if err != nil {
 		return err
@@ -157,11 +158,15 @@ func execute(ctx context.Context, args []string, out, stderr io.Writer) error {
 
 func printStatus(out io.Writer, rows []delegate.Row) error {
 	w := tabwriter.NewWriter(out, 0, 4, 2, ' ', 0)
-	if _, err := fmt.Fprintln(w, "PILLAR\tFOLLOW\tKIND\tVOTABLE\tDELEGATE\tOWNER\tACTION"); err != nil {
+	if _, err := fmt.Fprintln(w, "PILLAR\tFOLLOW\tKIND\tVOTABLE\tDELEGATE\tOWNER\tACTION\tCOPY AFTER (UTC)"); err != nil {
 		return err
 	}
 	for _, r := range rows {
-		if _, err := fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\t%s\t%s\n", r.Pillar, r.Follow, r.Votable.Kind, r.Votable.ID, delegate.VoteText(r.Delegate), delegate.VoteText(r.Owner), r.Action); err != nil {
+		copyAfter := "-"
+		if !r.CopyAfter.IsZero() {
+			copyAfter = r.CopyAfter.UTC().Format(time.RFC3339)
+		}
+		if _, err := fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n", r.Pillar, r.Follow, r.Votable.Kind, r.Votable.ID, delegate.VoteText(r.Delegate), delegate.VoteText(r.Owner), r.Action, copyAfter); err != nil {
 			return err
 		}
 	}

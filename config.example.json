@@ -2,6 +2,7 @@
   "nodeUrl": "ws://127.0.0.1:35998",
   "chainId": 1,
   "pollIntervalSeconds": 30,
+  "copyDelayMinutes": 0,
   "powTimeoutSeconds": 300,
   "statePath": "state/state.json",
   "delegations": [

@@ -37,6 +37,7 @@ func (e *Engine) QueueManual(ctx context.Context, d config.Delegation, id string
 		entry = &Entry{}
 		e.State.Entries(d.PillarName)[id] = entry
 	}
+	entry.CopyObservation = nil
 	entry.ManualVote = &v
 	entry.ManualConfirmed = false
 	entry.OwnerOverride = true
@@ -60,6 +61,7 @@ func (e *Engine) Resume(ctx context.Context, d config.Delegation, id string) err
 	// The operator explicitly hands this round back to the mirror, so adopt
 	// its current vote as the baseline rather than rediscovering an override.
 	entry.Cast = votes[id]
+	entry.CopyObservation = nil
 	entry.ManualVote = nil
 	entry.ManualConfirmed = false
 	entry.OwnerOverride = false
