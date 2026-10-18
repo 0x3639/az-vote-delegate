@@ -31,8 +31,9 @@ If setup does not open automatically, run `sudo az-vote-delegate` for a root ins
 2. **Install the service.** Choose **Yes** when asked to install and start a background service. It keeps working after you close the terminal menu.
 3. **Load your producer key.** Choose **Use existing znnd configuration**, or select a producer key file and enter its derivation index and password. No new key is generated and your znnd configuration is unchanged.
 4. **Choose a pillar to copy.** The menu shows the top 30 active voters in random order, with participation figures. [How participation is calculated](./delegation.md).
-5. **Choose your voting mode.** **Dry run** previews decisions without submitting votes; **Live** submits votes on eligible AZ proposals and phase-payout requests. Dry run is selected by default.
-6. **Save and start.** Review the mode and confirm. The service starts in the mode you selected.
+5. **Set a copy vote delay.** Enter the number of minutes to wait before copying each vote. `0` means no delay; manual votes bypass this setting. [Delay behavior](./delegation.md#delay-copied-votes).
+6. **Choose your voting mode.** **Dry run** previews decisions without submitting votes; **Live** submits votes on eligible AZ proposals and phase-payout requests. Dry run is selected by default.
+7. **Save and start.** Review the mode and confirm. The service starts in the mode you selected.
 
 The wizard saves a private password file so the service can unlock the key after a reboot. The file is readable and writable only by its owner (mode `0600`). Keep it and your application configuration private.
 

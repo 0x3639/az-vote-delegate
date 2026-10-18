@@ -7,9 +7,9 @@ description: Find the next step for connection, service, and voting problems.
 
 Check the mode shown at the top of the menu. **Dry run** only previews decisions. Select **Voting mode: Dry run / Live** to change it.
 
-In Live mode, confirm the [background service is running](./service.md). Your delegate must have voted on an eligible request, and an existing manual override can prevent copying that request. Check **Pending transactions & manual overrides** and service logs.
+In Live mode, confirm the [background service is running](./service.md). Your delegate must have voted on an eligible request, and an existing manual override can prevent copying that request. Check **Pending transactions & manual overrides** and service logs. A configured [copy vote delay](./delegation.md#delay-copied-votes) shows `waiting-delay` until its earliest submission time. Changes to the delegate’s vote restart the timer. Manual votes bypass it.
 
-The app supports legacy fused plasma and proof of work. Dynamic Plasma is not supported. Proof of work can take time; sends are sequential and can extend a poll beyond its configured delay.
+The app supports legacy fused plasma and proof of work. Dynamic Plasma is not supported. Proof of work can take time; sends are sequential and can extend a poll beyond its configured interval.
 
 ## Cannot connect to the node
 

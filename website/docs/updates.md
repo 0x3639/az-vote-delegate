@@ -15,6 +15,12 @@ An active service restarts automatically only when its generated systemd unit is
 
 Failed download or validation leaves the old executable in place. If installation succeeds but restarting the service fails, the app reports that partial result so you can check logs and restart it yourself.
 
+## Upgrading to v0.3.0
+
+Existing installations keep a zero-minute copy delay until you change it. After upgrading, choose **Copy vote delay: 0 minutes** to set your preferred delay. Existing manual overrides remain protected, and live timers persist on subsequent restarts.
+
+The new configuration and state fields are not readable by older releases, which reject unknown fields. If you need the option to downgrade, keep a private pre-upgrade backup of configuration and state. Do not discard current pending transactions or manual overrides just to make an older binary start; resolve them before restoring older state.
+
 ## Update notices
 
 The app checks GitHub when you open the menu and when you return to the main menu after 15 minutes. Selecting the update option always checks again. An idle menu updates when you return to or refresh the main screen.

@@ -42,8 +42,9 @@ export default function Home(): ReactNode {
                 <li>Choose <strong>Yes</strong> to install the background service.</li>
                 <li>Select <strong>Use existing znnd configuration</strong>, or enter your producer key file and password.</li>
                 <li>Choose a pillar to copy from the shuffled top 30 voters. Participation is shown beside each name.</li>
+                <li>Set a <strong>copy vote delay</strong> in minutes, or leave it at <strong>0</strong> for no delay. Manual votes bypass it.</li>
               </ol>
-              <Link to="/delegation">How delegate selection works →</Link>
+              <Link to="/delegation">Delegate selection and vote delays →</Link>
             </article>
             <article className={styles.step} id="run">
               <div className={styles.stepTitle}><span className={styles.number}>03</span><div><p className="ledger">Choose how to run</p><h3>Preview or start voting</h3></div></div>
@@ -54,7 +55,7 @@ export default function Home(): ReactNode {
             </article>
           </div>
           <article className={styles.reopen}>
-            <div><p className="ledger">You’re in control</p><h3>Come back whenever you need to</h3><p>Change the pillar you copy, cast a manual vote, or upgrade the app.</p></div>
+            <div><p className="ledger">You’re in control</p><h3>Come back whenever you need to</h3><p>Change the pillar you copy, adjust the copy delay, cast a manual vote, or upgrade the app.</p></div>
             <div className={styles.reopenCommand}>
               <Tabs lazy groupId="operator" defaultValue="root" values={[{label: 'Root', value: 'root'}, {label: 'Regular user', value: 'user'}]}>
                 <TabItem value="root"><CodeBlock language="bash">sudo az-vote-delegate</CodeBlock></TabItem>

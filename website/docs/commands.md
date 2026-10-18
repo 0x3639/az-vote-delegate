@@ -39,10 +39,11 @@ See the complete [example configuration](https://github.com/0x3639/az-vote-deleg
 | --- | --- |
 | `live` | Defaults to `false` (Dry run) |
 | `pollIntervalSeconds` | Defaults to `30` |
+| `copyDelayMinutes` | Defaults to `0`; whole minutes from `0` to `10080`. Applies to copied project and phase votes, not manual votes. |
 | `powTimeoutSeconds` | Defaults to `300` |
 | Chain ID | Must be explicitly configured |
 | `passwordEnv` / `passwordFile` | Configure exactly one per key |
-| `statePath` | Persistent voting state, including manual overrides |
+| `statePath` | Persistent voting state, including manual overrides and live copy-delay observations |
 
 Password files must be regular files with mode `0600`. Passwords are not accepted as CLI flags or stored directly in the JSON configuration. Setup uses a password file so the background service can unlock the producer key after reboot.
 
@@ -57,3 +58,5 @@ Advanced configurations can include multiple delegations, one per producer. If y
 | `AZ_INSTALL_DIR=/absolute/path` | Set the binary installation directory |
 
 When upgrading, keep the original user and installation directory. See [Updates & upgrades](./updates.md).
+
+Change the delay through the menu to apply it immediately. If you edit JSON directly, restart the existing service to load the new configuration. For example, add `"copyDelayMinutes": 15` at the top level of `config.json` for a 15-minute delay. See [delay behavior and limitations](./delegation.md#delay-copied-votes).

@@ -5,7 +5,7 @@ import type * as Preset from '@docusaurus/preset-classic';
 const siteUrl = 'https://www.0x3639.com/az-vote-delegate/';
 const description = 'Install AZ Vote Delegate on your Zenon pillar, choose a pillar to copy, and manage AZ proposal and phase-payout votes from a terminal menu.';
 const llmContext = `az-vote-delegate is a Linux terminal application and background service for Zenon Accelerator-Z voting, using a pillar producer key.
-Dry run previews without submitting; Live submits votes. Manual overrides apply to individual proposal or phase request IDs and persist locally. Dynamic Plasma is not supported.
+Dry run previews without submitting; Live submits votes. copyDelayMinutes (0–10080, default 0) delays each copied project or phase vote from first observation. Live timers persist; manual votes bypass the delay. Delays do not guarantee privacy. Manual overrides apply to individual proposal or phase request IDs and persist locally. Dynamic Plasma is not supported.
 Start with Installation & setup for the install command, producer configuration, delegate selection, and voting mode.
 Full documentation: [llms-full.txt](${siteUrl}llms-full.txt). Source and releases: [GitHub](https://github.com/0x3639/az-vote-delegate).`;
 
@@ -52,7 +52,7 @@ const config: Config = {
     generateLLMsTxt: true,
     generateLLMsFullTxt: true,
     generateMarkdownFiles: true,
-    includeOrder: ['getting-started.md', 'delegation.md', 'manual-voting.md', 'updates.md', 'service.md', 'troubleshooting.md', 'commands.md'],
+    includeOrder: ['getting-started.md', 'delegation.md', 'manual-voting.md', 'updates.md', 'service.md', 'troubleshooting.md', 'commands.md', 'development.md'],
     excludeImports: true,
     removeDuplicateHeadings: true,
     rootContent: llmContext,

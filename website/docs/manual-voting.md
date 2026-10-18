@@ -3,7 +3,7 @@ title: Manual votes & phases
 description: Cast your own vote on an AZ proposal or phase payout while copying other requests.
 ---
 
-A manual vote takes priority **only for that proposal or phase-payout request**. The service keeps running and copying other eligible requests. There is no pause for a number of days.
+A manual vote takes priority **only for that proposal or phase-payout request**. The service keeps running and copying other eligible requests. There is no pause for a number of days. Manual votes bypass the configured copy vote delay; they still wait for any earlier pending transaction, proof of work, or retry backoff as needed.
 
 ## Cast a vote
 

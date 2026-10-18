@@ -9,6 +9,7 @@ const sidebars: SidebarsConfig = {
     'service',
     'troubleshooting',
     'commands',
+    'development',
   ],
 };
 export default sidebars;
