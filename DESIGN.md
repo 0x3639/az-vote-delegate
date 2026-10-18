@@ -81,9 +81,11 @@ once on a publish error.
 Plasma: a producer address usually has no fused QSR, so the SDK will generate PoW for every
 vote (difficulty = plasma × 1500, so ~79 M for 52,500 plasma; seconds to a minute or two on
 a CPU). Fusing a small amount of QSR to the producer address removes PoW entirely; the
-daemon should log which path it used. Dynamic Plasma (on `dev`, not yet on mainnet) changes
-the price; the SDK asks the node (`embedded.plasma.getRequiredPoWForAccountBlock`) so the
-daemon inherits whatever the node says.
+daemon should log which path it used. This release supports the legacy fused-plasma /
+PoW flow only; Dynamic Plasma is explicitly out of scope. The SDK queries
+`embedded.plasma.getRequiredPoWForAccountBlock`, but that alone does not establish
+Dynamic Plasma compatibility. Supporting it requires a separate implementation and
+validation effort.
 
 ## 4. How it works
 

@@ -5,6 +5,9 @@ to copy, review project proposals and phase-payout requests, or cast your own
 **yes / no / abstain** vote. Uses the existing pillar **producer key**, never the
 owner's stake key. The menu works over SSH, like NOMCTL.
 
+**Compatibility:** v0.2.0 supports the legacy fused-plasma / proof-of-work voting
+flow. Dynamic Plasma is not supported by this release.
+
 ## Install
 
 On a Linux amd64 or arm64 pillar host:
@@ -203,6 +206,8 @@ is unsafe; back up and inspect the state first.
 
 The SDK asks the node whether fused plasma is sufficient, otherwise it computes
 PoW. The service does not auto-fuse QSR. Logs identify PoW versus fused plasma.
+Reading the node's plasma requirements does not establish Dynamic Plasma
+compatibility; that requires a separate implementation and validation effort.
 Sends are sequential, so CPU work can extend a poll beyond the configured delay.
 A status preview remains available while PoW runs. SIGINT/SIGTERM cancel work
 and save state. WebSocket reads are interrupted on cancellation; HTTP reads have

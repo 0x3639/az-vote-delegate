@@ -1,5 +1,7 @@
 The curl installer now opens terminal setup automatically. Setup asks for confirmation to install and start the background service, then lets the operator select a delegate.
 
+**Compatibility:** This release supports the legacy fused-plasma / proof-of-work voting flow. Dynamic Plasma is not supported.
+
 - The delegate picker takes the top 30 active pillars by recorded AZ votes, excludes the operator's own pillar, and shuffles the display. Ties are shuffled before the cutoff.
 - Each pillar shows participation as a percentage and voted/total request counts. Counts include all project and phase requests retained by the node, including closed requests; they are not adjusted for pillar registration dates.
 - Manual project and phase-payout menus fetch fresh votes and show only unanswered requests. Yes, no and abstain all count as answered. Queued manual choices appear in Activity.
