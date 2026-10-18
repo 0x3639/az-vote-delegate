@@ -5,7 +5,7 @@ import type * as Preset from '@docusaurus/preset-classic';
 const config: Config = {
   title: 'az-vote-delegate',
   tagline: 'Copy pillar votes. Keep control of your own.',
-  url: 'https://0x3639.github.io',
+  url: 'https://www.0x3639.com',
   baseUrl: '/az-vote-delegate/',
   trailingSlash: true,
   favicon: 'img/az.svg',

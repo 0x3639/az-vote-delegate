@@ -3,7 +3,7 @@
 Docusaurus documentation for az-vote-delegate. Site source and the Pages workflow
 live on the `docusaurus` branch; application releases continue from `main`.
 
-Public URL: https://0x3639.github.io/az-vote-delegate/
+Public URL: https://www.0x3639.com/az-vote-delegate/
 
 ## Develop
 
@@ -42,7 +42,8 @@ trusted source, and review the advisory when updating the toolchain.
 Push changes to `docusaurus`. `.github/workflows/docs.yml` builds the site and
 deploys it through GitHub Pages Actions. Pages must use the Actions deployment
 source and permit the `docusaurus` branch in the `github-pages` environment.
-No `gh-pages` output branch or custom domain is required.
+No `gh-pages` output branch is required. The project inherits the account's
+existing Pages domain, `www.0x3639.com`; it has no separate domain configuration.
 
 The project URL requires `baseUrl: '/az-vote-delegate/'`. Keep links inside the
 site base-path aware. If moving to a custom domain, update `url` and `baseUrl`

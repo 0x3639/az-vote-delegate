@@ -5,7 +5,7 @@ to copy, review project proposals and phase-payout requests, or cast your own
 **yes / no / abstain** vote. Uses the existing pillar **producer key**, never the
 owner's stake key. The menu works over SSH.
 
-**[Documentation & quick start](https://0x3639.github.io/az-vote-delegate/)** —
+**[Documentation & quick start](https://www.0x3639.com/az-vote-delegate/)** —
 installation, delegation, manual votes, and service management.
 
 **Compatibility:** v0.2.7 supports the legacy fused-plasma / proof-of-work voting
