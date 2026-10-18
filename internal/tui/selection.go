@@ -28,7 +28,7 @@ func topCandidates(all []node.Participation, self string, shuffle func(int, func
 	return candidates
 }
 
-func chooseDelegate(ctx context.Context, all []node.Participation, self string) (string, error) {
+func chooseDelegate(ctx context.Context, all []node.Participation, self, backLabel string) (string, error) {
 	options := []huh.Option[string]{}
 	for _, p := range topCandidates(all, self, rand.Shuffle) {
 		label := Clean(p.Name) + " · no recorded requests"
@@ -40,8 +40,12 @@ func chooseDelegate(ctx context.Context, all []node.Participation, self string) 
 	if len(options) == 0 {
 		return "", errors.New("no other active pillars found; if you just upgraded, restart the voting service")
 	}
-	chosen := ""
+	chosen := options[0].Value
+	options = append(options, huh.NewOption(backLabel, ""))
 	err := form(ctx, huh.NewSelect[string]().Title("Choose a pillar to copy").Description("Your pillar: "+Clean(self)+". Top 30 by recorded votes, shuffled; type to search.\nParticipation = votes / all retained project and phase requests, including closed requests. Not adjusted for when a pillar joined.\nApplies to projects and phase payouts; existing manual overrides stay in place.").Height(18).Filtering(true).Options(options...).Value(&chosen))
+	if err == nil && chosen == "" {
+		err = errBack
+	}
 	return chosen, err
 }
 

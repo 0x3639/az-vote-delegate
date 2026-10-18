@@ -1,10 +1,11 @@
-Makes voting mode an explicit choice during setup and in the main menu.
+Adds Back navigation throughout the terminal menu.
 
-- Choose **Dry run — preview without submitting votes** or **Live — submit votes**. Dry run is selected by default for new setups.
-- Setup then shows the chosen mode and a separate **Save and start** (or **Save setup**) / **Cancel** confirmation. Cancel never selects live mode.
-- The service starts in the confirmed mode. The main menu's **Voting mode: Dry run / Live** option uses the same explicit choices.
-- Explains password storage separately in plain language, without mixing file-permission details into the mode question.
+- Press **Esc** or choose **Back** to leave a submenu without closing the app.
+- Back returns from vote confirmation to request details, then to the unanswered list, then to the main menu. Cancelling does not submit a vote or change voting mode.
+- Delegate selection, voting mode, and manual-override confirmations also return to their previous screen.
+- Every screen displays the Esc / Ctrl+C shortcut hint. Esc also works while searching; Tab applies a filter and Ctrl+R clears it.
+- Esc at the main menu and Ctrl+C exit the menu while the background service keeps running. Esc during first-time setup cancels unsaved setup.
 
-Existing settings are preserved. Switching to dry run stops new submissions; transactions already submitted may still finish. Both modes apply to AZ proposals and phase payouts.
+Existing settings and votes are preserved. Back does not undo an already submitted vote.
 
 **Compatibility:** This release supports the legacy fused-plasma / proof-of-work voting flow. Dynamic Plasma is not supported.

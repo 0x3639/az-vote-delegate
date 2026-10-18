@@ -5,7 +5,7 @@ to copy, review project proposals and phase-payout requests, or cast your own
 **yes / no / abstain** vote. Uses the existing pillar **producer key**, never the
 owner's stake key. The menu works over SSH.
 
-**Compatibility:** v0.2.3 supports the legacy fused-plasma / proof-of-work voting
+**Compatibility:** v0.2.4 supports the legacy fused-plasma / proof-of-work voting
 flow. Dynamic Plasma is not supported by this release.
 
 ## TL;DR — quick start
@@ -61,7 +61,7 @@ the service. Release binaries are static: no Go compiler, C compiler, Docker,
 To pin a release:
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/0x3639/az-vote-delegate/main/install.sh | sudo env AZ_VERSION=v0.2.3 sh
+curl -fsSL https://raw.githubusercontent.com/0x3639/az-vote-delegate/main/install.sh | sudo env AZ_VERSION=v0.2.4 sh
 ```
 
 Run the installer again to upgrade, then restart the voting service. Use
@@ -106,6 +106,15 @@ If systemd is unavailable, run `az-vote-delegate run` in another terminal and
 reconnect from the menu. The service and UI must use the same config and user.
 
 ## The menu
+
+Press **Esc** or select **Back** to return one screen: vote confirmation →
+request details → request list → main menu. Back cancels an unsubmitted choice.
+At the main menu, Esc exits the menu; **Ctrl+C** exits from any screen. The
+background service keeps running. During first-time setup, Esc cancels unsaved
+setup; **Shift+Tab** moves to the previous field within a setup step.
+
+When searching a list, **Tab** applies the filter and **Ctrl+R** clears it.
+Esc still goes back while searching.
 
 - **Vote on unanswered AZ proposals**: inspect and vote on open initial funding
   proposals your pillar has not voted on yet.
