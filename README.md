@@ -5,7 +5,7 @@ to copy, review project proposals and phase-payout requests, or cast your own
 **yes / no / abstain** vote. Uses the existing pillar **producer key**, never the
 owner's stake key. The menu works over SSH.
 
-**Compatibility:** v0.2.5 supports the legacy fused-plasma / proof-of-work voting
+**Compatibility:** v0.2.6 supports the legacy fused-plasma / proof-of-work voting
 flow. Dynamic Plasma is not supported by this release.
 
 ## TL;DR — quick start
@@ -61,7 +61,7 @@ the service. Release binaries are static: no Go compiler, C compiler, Docker,
 To pin a release:
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/0x3639/az-vote-delegate/main/install.sh | sudo env AZ_VERSION=v0.2.5 sh
+curl -fsSL https://raw.githubusercontent.com/0x3639/az-vote-delegate/main/install.sh | sudo env AZ_VERSION=v0.2.6 sh
 ```
 
 Run the installer again as the **same user**, using the **same install directory**,
@@ -86,6 +86,43 @@ stop that process before launching the upgraded version.
 Use `AZ_INSTALL_DIR=/absolute/path` to choose another binary directory. Switching
 users, configuration files or install directories is a separate installation,
 not an upgrade; keep using the original user and paths for normal reinstalls.
+
+## Updates from the menu
+
+Choose **Check for updates / upgrade** from the main menu. When a newer stable
+release is available, the menu shows **Update available: v…** and the option
+becomes **Upgrade application to v…**. The app checks GitHub when you open the
+menu and when you return to the main menu after 15 minutes. Selecting the update
+option always checks again. These are in-app notices; the daemon does not send
+notifications while the menu is closed, and an idle screen updates when you
+return to or refresh the main menu. Failed checks do not interrupt voting.
+
+The upgrade screen shows both versions, the installation path, a release-notes
+link and whether the existing service will restart. Confirm **Upgrade** to:
+
+1. Download the Linux amd64 or arm64 release, verify its SHA-256 checksum, and
+   check that the executable reports the expected version.
+2. Replace the existing executable in place. Configuration, passwords, voting
+   mode and persistent manual overrides remain unchanged.
+3. Restart the existing active systemd service when its unmodified generated
+   unit matches this executable and configuration, then reopen the updated menu.
+
+A stopped service stays stopped. Foreground processes, custom units and units
+with drop-ins require a manual restart; the screen explains this before you
+confirm. No upgrade installs or enables a second service. If a service restart
+fails after the binary was installed, the result explicitly reports that partial
+outcome so you can inspect the service logs and restart it manually.
+
+Run the menu as the installation owner (`sudo az-vote-delegate` for a root
+installation). The app does not elevate privileges automatically. Downloads and
+validation happen while the existing service keeps running; only the service
+restart briefly interrupts it. Failed download, checksum or version validation
+leaves the old executable in place. Downgrades and concurrent upgrades are
+rejected.
+
+**First upgrade from v0.2.5 or earlier:** rerun the curl installer once to get
+this menu option, then restart your existing service. Future upgrades can use
+the menu.
 
 ## First run
 
@@ -143,6 +180,8 @@ Esc still goes back while searching.
   ZNN/QSR. Copy voting and manual voting work for both kinds of request.
 - **Choose pillar to copy**: choose from the shuffled top 30 active voters, with
   participation shown beside each name. Existing manual overrides stay in place.
+- **Check for updates / upgrade**: check the latest stable GitHub release and
+  install it after confirmation. Available updates appear in the menu.
 - **Pending transactions & manual overrides**: inspect queued choices, confirmed
   manual overrides and pending block hashes, or resume copying for an override.
 - **Voting mode: Dry run / Live**: explicitly select previews only or live vote

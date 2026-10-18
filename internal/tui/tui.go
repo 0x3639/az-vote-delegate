@@ -17,6 +17,7 @@ import (
 	"github.com/0x3639/az-vote-delegate/internal/delegate"
 	"github.com/0x3639/az-vote-delegate/internal/node"
 	"github.com/0x3639/az-vote-delegate/internal/setup"
+	"github.com/0x3639/az-vote-delegate/internal/update"
 	"github.com/charmbracelet/huh"
 	"github.com/charmbracelet/x/term"
 )
@@ -60,7 +61,7 @@ func absolute(s string) error {
 	}
 	return nil
 }
-func Run(ctx context.Context, path string) error {
+func Run(ctx context.Context, path, version string) error {
 	if !term.IsTerminal(os.Stdin.Fd()) || !term.IsTerminal(os.Stderr.Fd()) {
 		return errors.New("the interactive menu needs a terminal; use --help for commands")
 	}
@@ -69,7 +70,10 @@ func Run(ctx context.Context, path string) error {
 			return err
 		}
 	}
+	updates := &updater{current: version, client: update.NewClient()}
+	fmt.Fprintln(os.Stderr, "Checking for application updates…")
 	for ctx.Err() == nil {
+		updates.check(ctx, false)
 		c, err := config.Load(path)
 		if err != nil {
 			return err
@@ -77,7 +81,7 @@ func Run(ctx context.Context, path string) error {
 		response, err := control.Call(ctx, c, nil)
 		if err != nil {
 			action := ""
-			if err = form(ctx, huh.NewSelect[string]().Title("AZ vote manager — service is stopped").Description("Start the service to preview votes, select a delegate and vote manually.").Options(huh.NewOption("Install and start background service (systemd)", "service"), huh.NewOption("Show foreground command", "foreground"), huh.NewOption("Retry connection", "retry"), huh.NewOption("Exit", "exit")).Value(&action)); err != nil {
+			if err = form(ctx, huh.NewSelect[string]().Title("AZ vote manager — service is stopped").Description("Start the service to preview votes, select a delegate and vote manually.\n"+updates.notice()).Options(huh.NewOption("Install and start background service (systemd)", "service"), huh.NewOption("Show foreground command", "foreground"), huh.NewOption("Retry connection", "retry"), updates.option(), huh.NewOption("Exit", "exit")).Value(&action)); err != nil {
 				if errors.Is(err, errBack) {
 					return nil
 				}
@@ -93,6 +97,17 @@ func Run(ctx context.Context, path string) error {
 					}
 				} else {
 					time.Sleep(300 * time.Millisecond)
+				}
+			case "upgrade":
+				if err = updates.upgrade(ctx, path); err != nil {
+					if errors.Is(err, huh.ErrUserAborted) {
+						return err
+					}
+					if !errors.Is(err, errBack) {
+						if err = note(ctx, "Upgrade not completed", Clean(err.Error())); err != nil {
+							return err
+						}
+					}
 				}
 			case "foreground":
 				if err = note(ctx, "Run in a second terminal", fmt.Sprintf("az-vote-delegate run --config %q\n\nThen choose Retry connection here. For a persistent systemd user service, enable lingering with loginctl enable-linger USER.", path)); err != nil {
@@ -110,8 +125,8 @@ func Run(ctx context.Context, path string) error {
 			mode = "LIVE — votes can be published"
 		}
 		action := ""
-		options := []huh.Option[string]{huh.NewOption("Vote on unanswered AZ proposals", "projects"), huh.NewOption("Vote on unanswered phase payouts", "phases"), huh.NewOption("Choose pillar to copy", "follow"), huh.NewOption("Pending transactions & manual overrides", "activity"), huh.NewOption("Voting mode: Dry run / Live", "mode"), huh.NewOption("Refresh", "refresh"), huh.NewOption("Exit (service keeps running)", "exit")}
-		description := fmt.Sprintf("%s  ·  Chain %d\n", mode, s.ChainID)
+		options := []huh.Option[string]{huh.NewOption("Vote on unanswered AZ proposals", "projects"), huh.NewOption("Vote on unanswered phase payouts", "phases"), huh.NewOption("Choose pillar to copy", "follow"), huh.NewOption("Pending transactions & manual overrides", "activity"), huh.NewOption("Voting mode: Dry run / Live", "mode"), updates.option(), huh.NewOption("Refresh", "refresh"), huh.NewOption("Exit (service keeps running)", "exit")}
+		description := fmt.Sprintf("%s  ·  Chain %d\n%s\n", mode, s.ChainID, updates.notice())
 		for _, d := range s.Delegations {
 			description += Clean(d.Pillar) + " follows " + Clean(d.Follow) + "\n"
 		}
@@ -135,6 +150,8 @@ func Run(ctx context.Context, path string) error {
 			err = activity(ctx, c, s)
 		case "mode":
 			err = changeMode(ctx, c, s.Live)
+		case "upgrade":
+			err = updates.upgrade(ctx, path)
 		}
 		if err != nil {
 			if errors.Is(err, errBack) {

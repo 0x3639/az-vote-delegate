@@ -71,7 +71,7 @@ func execute(ctx context.Context, args []string, out, stderr io.Writer) error {
 		return errors.New("unexpected positional arguments")
 	}
 	if command == "ui" {
-		return tui.Run(ctx, *path)
+		return tui.Run(ctx, *path, version)
 	}
 	if command == "setup" {
 		return tui.Wizard(ctx, *path)
