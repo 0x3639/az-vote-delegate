@@ -25,7 +25,7 @@ const index = await read('llms.txt');
 const full = await read('llms-full.txt');
 // The combined export nests each guide under an H2, shifting its headings.
 const normalizeHeadings = (markdown) => markdown.replace(/^#{1,6} /gm, '# ');
-assert(index.startsWith('# az-vote-delegate documentation\n'));
+assert(index.startsWith('# AZ Vote Delegate documentation\n'));
 assert(full.length > index.length * 3, 'Full export is unexpectedly short');
 const sitemap = await read('sitemap.xml');
 assert(!sitemap.includes('/search/'), 'Search results must not be in the sitemap');

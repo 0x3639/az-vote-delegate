@@ -11,14 +11,15 @@ const installer = 'curl -fsSL https://raw.githubusercontent.com/0x3639/az-vote-d
 
 export default function Home(): ReactNode {
   return (
-    <Layout title="Quick start" description="Install, set up and run az-vote-delegate on your Zenon pillar. Copy a pillar’s AZ and phase-payout votes while keeping manual control.">
+    <Layout title="Quick start" description="Too busy to vote on AZs? Install AZ Vote Delegate, choose a pillar you trust, and automatically copy its proposal and phase-payout votes. Keep manual control.">
       <main>
         <header className={styles.hero}>
           <div className="container">
             <p className="ledger">Zenon Network of Momentum · Accelerator-Z voting</p>
-            <h1>az-vote-delegate</h1>
-            <p className={styles.lead}>Copy a pillar’s votes. Keep control of your own.</p>
-            <p className={styles.intro}>A terminal menu and background service for AZ proposals and phase payouts.</p>
+            <h1>AZ Vote Delegate</h1>
+            <p className={styles.lead}>Too busy to vote on AZs? Delegate to a pillar you trust.</p>
+            <p className={styles.intro}>Install a lightweight app on your pillar, follow the setup menu, and automatically copy your chosen pillar’s votes on AZ proposals and phase payouts.</p>
+            <p className={styles.intro}>Keep your wallet seed private. The app uses your existing producer key, and you can cast your own votes anytime.</p>
           </div>
         </header>
         <section className={`container ${styles.quickstart}`} aria-labelledby="quick-start">

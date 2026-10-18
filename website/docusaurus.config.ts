@@ -3,14 +3,14 @@ import type {Config} from '@docusaurus/types';
 import type * as Preset from '@docusaurus/preset-classic';
 
 const siteUrl = 'https://www.0x3639.com/az-vote-delegate/';
-const description = 'Install az-vote-delegate on your Zenon pillar, choose a pillar to copy, and manage AZ proposal and phase-payout votes from a terminal menu.';
+const description = 'Install AZ Vote Delegate on your Zenon pillar, choose a pillar to copy, and manage AZ proposal and phase-payout votes from a terminal menu.';
 const llmContext = `az-vote-delegate is a Linux terminal application and background service for Zenon Accelerator-Z voting, using a pillar producer key.
 Dry run previews without submitting; Live submits votes. Manual overrides apply to individual proposal or phase request IDs and persist locally. Dynamic Plasma is not supported.
 Start with Installation & setup for the install command, producer configuration, delegate selection, and voting mode.
 Full documentation: [llms-full.txt](${siteUrl}llms-full.txt). Source and releases: [GitHub](https://github.com/0x3639/az-vote-delegate).`;
 
 const config: Config = {
-  title: 'az-vote-delegate',
+  title: 'AZ Vote Delegate',
   tagline: 'Copy pillar votes. Keep control of your own.',
   url: 'https://www.0x3639.com',
   baseUrl: '/az-vote-delegate/',
@@ -32,13 +32,13 @@ const config: Config = {
       '@context': 'https://schema.org',
       '@type': 'WebSite',
       '@id': `${siteUrl}#website`,
-      name: 'az-vote-delegate documentation',
+      name: 'AZ Vote Delegate documentation',
       url: siteUrl,
       description,
       inLanguage: 'en',
       about: {
         '@type': 'SoftwareSourceCode',
-        name: 'az-vote-delegate',
+        name: 'AZ Vote Delegate',
         codeRepository: 'https://github.com/0x3639/az-vote-delegate',
         programmingLanguage: 'Go',
         license: 'https://www.gnu.org/licenses/gpl-3.0.html',
@@ -47,7 +47,7 @@ const config: Config = {
   ],
   plugins: [['docusaurus-plugin-llms', {
     docsDir: [{path: 'docs', routeBasePath: '/', label: 'Guides'}],
-    title: 'az-vote-delegate documentation',
+    title: 'AZ Vote Delegate documentation',
     description,
     generateLLMsTxt: true,
     generateLLMsFullTxt: true,
@@ -83,7 +83,7 @@ const config: Config = {
       {name: 'theme-color', content: '#151515'},
       {name: 'twitter:card', content: 'summary_large_image'},
       {name: 'twitter:image:alt', content: 'az-vote-delegate — Copy pillar votes. Keep control of your own. Green connected pillars on a dark background.'},
-      {property: 'og:site_name', content: 'az-vote-delegate documentation'},
+      {property: 'og:site_name', content: 'AZ Vote Delegate documentation'},
       {property: 'og:type', content: 'website'},
       {property: 'og:locale', content: 'en_US'},
       {property: 'og:image:width', content: '1730'},
@@ -93,7 +93,7 @@ const config: Config = {
     ],
     colorMode: {defaultMode: 'dark', respectPrefersColorScheme: false},
     navbar: {
-      title: 'az-vote-delegate',
+      title: 'AZ Vote Delegate',
       logo: {alt: 'Accelerator-Z', src: 'img/az.svg'},
       items: [
         {to: '/', label: 'Quick start', position: 'left', activeBaseRegex: '^/az-vote-delegate/$'},
@@ -110,7 +110,7 @@ const config: Config = {
         {title: 'Manage your votes', items: [{label: 'Manual votes & phases', to: '/manual-voting'}, {label: 'Updates', to: '/updates'}, {label: 'Service & troubleshooting', to: '/service'}]},
         {title: 'Project', items: [{label: 'Command reference', to: '/commands'}, {label: 'For AI tools (llms.txt)', href: `${siteUrl}llms.txt`}, {label: 'All docs as text', href: `${siteUrl}llms-full.txt`}, {label: 'GitHub', href: 'https://github.com/0x3639/az-vote-delegate'}, {label: 'Releases', href: 'https://github.com/0x3639/az-vote-delegate/releases'}]},
       ],
-      copyright: 'az-vote-delegate · Community tooling for Zenon, Network of Momentum · GPL-3.0',
+      copyright: 'AZ Vote Delegate · Community tooling for Zenon, Network of Momentum · GPL-3.0',
     },
     prism: {theme: prismThemes.github, darkTheme: prismThemes.dracula, additionalLanguages: ['bash', 'json', 'ini']},
   } satisfies Preset.ThemeConfig,
