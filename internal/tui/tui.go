@@ -313,7 +313,7 @@ func Wizard(ctx context.Context, path string) error {
 			return errors.New("enter a positive chain ID")
 		}
 		return nil
-	}), huh.NewConfirm().Title("Install and start a background service after setup?").Description("Keeps running after you close the menu. Starts in dry-run mode until you enable live voting.").Value(&installService), huh.NewSelect[string]().Title("Producer key").Options(huh.NewOption("Use existing znnd / NOMCTL configuration", "znnd"), huh.NewOption("Choose a key file and enter its password", "file")).Value(&source)); err != nil {
+	}), huh.NewConfirm().Title("Install and start a background service after setup?").Description("Keeps running after you close the menu. Starts in dry-run mode until you enable live voting.").Value(&installService), huh.NewSelect[string]().Title("Producer key").Options(huh.NewOption("Use existing znnd configuration", "znnd"), huh.NewOption("Choose a key file and enter its password", "file")).Value(&source)); err != nil {
 		return err
 	}
 	p := setup.Producer{KeyFilePath: filepath.Join(home, ".znn", "wallet", "producer")}
