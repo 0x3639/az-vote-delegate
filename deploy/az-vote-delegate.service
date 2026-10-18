@@ -1,0 +1,27 @@
+[Unit]
+Description=Accelerator-Z pillar vote delegation
+Wants=network-online.target
+After=network-online.target
+StartLimitIntervalSec=300
+StartLimitBurst=5
+
+[Service]
+Type=simple
+User=znn
+Group=znn
+EnvironmentFile=/etc/az-vote-delegate/passwords.env
+ExecStart=/usr/local/bin/az-vote-delegate run --config /etc/az-vote-delegate/config.json --dry-run
+Restart=on-failure
+RestartSec=30
+TimeoutStopSec=45
+StateDirectory=az-vote-delegate
+StateDirectoryMode=0700
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=/var/lib/az-vote-delegate
+
+[Install]
+WantedBy=multi-user.target

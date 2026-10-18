@@ -1,0 +1,221 @@
+# az-vote-delegate
+
+A terminal app and background service for Accelerator-Z voting. Choose a pillar
+to copy, review project proposals and phase-payout requests, or cast your own
+**yes / no / abstain** vote. Uses the existing pillar **producer key**, never the
+owner's stake key. The menu works over SSH, like NOMCTL.
+
+## Install
+
+On a Linux amd64 or arm64 pillar host:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/0x3639/az-vote-delegate/main/install.sh | sudo sh
+sudo az-vote-delegate
+```
+
+Run the app as the user who owns your producer key. `sudo` is appropriate for a
+root-operated znnd/NOMCTL installation. For an unprivileged node user, install
+without `sudo`; the binary goes to `~/.local/bin` and the installer prints its
+full path. Root installation uses `/usr/local/bin`.
+
+The installer downloads a prebuilt release, verifies its SHA-256 checksum and
+replaces the executable atomically. It does not touch the node, producer key,
+application configuration or votes. Release binaries are static: no Go compiler,
+C compiler, Docker, `gum` or `jq` is required on the pillar host.
+
+To pin a release:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/0x3639/az-vote-delegate/main/install.sh | sudo env AZ_VERSION=v0.1.0 sh
+```
+
+Run the installer again to upgrade, then restart the voting service. Use
+`AZ_INSTALL_DIR=/absolute/path` to choose another binary directory.
+
+## First run
+
+The setup wizard guides you through:
+
+1. Your local/trusted node URL and expected chain ID (mainnet is `1`).
+2. Importing the producer settings from your existing znnd `config.json`, or
+   entering a key-file path, derivation index and password. No key is generated.
+3. Identifying your pillar from the producer address and selecting another
+   active pillar from a searchable list.
+4. Saving a private application config and a mode-0600 password file.
+5. Starting the background service from the menu, initially in **dry-run**.
+
+Review the proposed decisions, then select **Pause / enable live voting** to
+start publishing. The saved mode survives service restarts. Closing the menu
+leaves the service running. The original znnd configuration is never changed.
+
+By default, application files live under `~/.config/az-vote-delegate/`:
+`config.json`, `producer-password`, and a private `state/` directory. An existing
+`./config.json` is preferred for compatibility; `--config` selects an explicit
+path. Keep application files private and out of Git.
+
+On root-operated hosts the generated systemd unit is installed in
+`/etc/systemd/system`. Otherwise it is a systemd **user** unit. For a user service
+to survive logout and start at boot, enable lingering for that node user:
+
+```sh
+sudo loginctl enable-linger YOUR_NODE_USER
+```
+
+If systemd is unavailable, run `az-vote-delegate run` in another terminal and
+reconnect from the menu. The service and UI must use the same config and user.
+
+## The menu
+
+- **Project proposals**: inspect open initial funding proposals and vote manually.
+- **Phase payouts / payment requests**: inspect the current unpaid voting phase,
+  its parent project, description, URL and requested ZNN/QSR. Copy voting and
+  manual voting work here exactly as they do for project proposals.
+- **Choose pillar to copy**: search the live pillar list and save a new delegate.
+  Existing manual overrides stay in place.
+- **Pending transactions & manual overrides**: inspect queued choices, confirmed
+  manual overrides and pending block hashes.
+- **Pause / enable live voting**: pause new submissions without changing already
+  submitted transactions.
+
+The app votes on payment requests; it does not submit a project owner's payment
+request or promise that voting will immediately release funds. Contract rules
+and the votes of other pillars still determine whether a phase passes.
+
+## Manual votes take priority
+
+A manual vote from this app records an explicit, durable override **before** it
+is acknowledged. This includes selecting the same vote the daemon previously
+cast: a manual yes remains a manual yes even if the delegate later changes to no.
+The service is the only signer and state writer; the UI uses its owner-only Unix
+socket and never starts a competing signer.
+
+When you choose a manual vote, the service interrupts copy-vote preparation. If
+a copy vote has already been submitted, the app waits for its confirmed contract
+receipt before applying your choice. The menu distinguishes a **queued choice**
+from a **confirmed manual vote**. A lost publish response is held pending rather
+than blindly retried. You may need to inspect that transaction on your trusted
+node before proceeding. If the request closes while an earlier transaction is
+pending, your queued choice cannot reopen it or undo the contract's decision.
+
+The manual override remains for that request until you choose **Resume copying
+for this request**, the request closes, or its confirmed votes are reset. Updating
+a phase in go-zenon replaces its votable ID; the revised payout request gets its
+own fresh voting round. The app follows the current phase ID and never applies
+an old phase's override to its replacement. Projects and phases have independent
+IDs and overrides.
+
+Votes cast through **external tools** still have the off-chain limitation: the
+current vote value cannot identify a same-value manual vote, and an external
+writer can race with this service. For guaranteed external manual control, stop
+the service, resolve pending submissions, and leave it stopped while voting.
+
+## Commands and configuration
+
+```sh
+az-vote-delegate                         # menu; setup on first use
+az-vote-delegate setup                   # setup wizard only
+az-vote-delegate service-install         # install/start the systemd service
+az-vote-delegate run                     # service, using the saved voting mode
+az-vote-delegate run --dry-run           # force previews only
+az-vote-delegate run --dry-run=false     # explicitly enable live submissions
+az-vote-delegate status                  # current project/phase decisions
+az-vote-delegate check                   # key, pillar and chain-ID checks
+az-vote-delegate version
+```
+
+Every relevant command accepts `--config /absolute/path/config.json`; `run`
+also accepts `--debug`. `check` never signs or publishes. If the service is
+running, `status` reads its cached snapshot without opening another key.
+
+[config.example.json](config.example.json) supports multiple delegations, one
+per producer. Paths resolve relative to the config. `live` defaults to false;
+`pollIntervalSeconds` defaults to 30 and `powTimeoutSeconds` to 300. The chain ID
+must be explicit. Configure exactly one of `passwordEnv` or `passwordFile` for
+each key. Password files must be regular files with mode 0600. Passwords are not
+accepted as CLI flags or stored in the app's JSON config.
+
+The wizard uses a password file so the background service can unlock the key
+after reboot. For an environment-based configuration, arrange the environment
+in your systemd unit, for example using the example in
+[deploy/az-vote-delegate.service](deploy/az-vote-delegate.service).
+
+## Reliability and operation
+
+The service reads current votes every poll, so it does not need to observe the
+delegate's original vote block. It pages through all projects, using the node's
+1,024-entry limit, and selects Voting projects within the 14-day window and the
+current Voting phase of Active projects. Reads use node time. Delegation chains
+work; an empty A↔B cycle produces no initial vote.
+
+The state file tracks copy votes, explicit manual choices, external overrides,
+backoff and pending submissions. Saves use a 0600 temporary file, file sync,
+atomic rename and directory sync. Save failures stop live operation. A file lock
+prevents a second service from using the same state, and the private directory
+and mode-0600 control socket restrict control to its owner. Do not run multiple
+instances for the same producer using different state paths.
+
+A signed block hash is journaled before publication. Pending sends wait for a
+confirmed contract receive block, then votes are reread. Preparation failures
+and definite rejections retry on the next poll, then back off exponentially up
+to 30 minutes. Ambiguous publications remain pending, including a crash between
+journaling and publishing. This favors avoiding duplicate votes over automatic
+recovery from an unknown outcome.
+
+Missing state conservatively treats existing votes as manual. Corrupt or
+cross-network state is refused. After stopping the service and resolving every
+pending transaction, an explicit reset can discard attribution and overrides:
+
+```sh
+az-vote-delegate run --config /path/to/config.json --dry-run=false --reset-state
+```
+
+Existing on-chain votes remain. Resetting while a transaction might still execute
+is unsafe; back up and inspect the state first.
+
+The SDK asks the node whether fused plasma is sufficient, otherwise it computes
+PoW. The service does not auto-fuse QSR. Logs identify PoW versus fused plasma.
+Sends are sequential, so CPU work can extend a poll beyond the configured delay.
+A status preview remains available while PoW runs. SIGINT/SIGTERM cancel work
+and save state. WebSocket reads are interrupted on cancellation; HTTP reads have
+a 30-second transport timeout. Subsequent polls open a fresh connection.
+
+The producer key is held in memory while running, as it is in znnd. Use the node
+host or a host with equivalent protection, and an RPC endpoint you trust. No
+browser server, remote control port or hosted key service is involved.
+
+## Development and releases
+
+Source builds need Go 1.26 (toolchain 1.26.7) and a C compiler, because the SDK's
+transitive go-zenon/secp256k1 dependency requires CGO. macOS is supported for
+source-based development; prebuilt releases target Linux amd64 and arm64.
+
+```sh
+make build
+make test       # Go race detector, local mock RPC servers
+make vet
+make lint       # golangci-lint v2.13.1 or compatible
+sh scripts/test-install.sh
+```
+
+The Makefile disables a parent `go.work`. Tests cover reconciliation, native
+znnd wallet compatibility, signed embedded votes and PoW, project/phase paging,
+manual same-value overrides, restart recovery, interruption of copy preparation,
+waiting for pending copies, phase-payout replacement, and installer checksum
+failure. No operator credentials are used in tests.
+
+Pushing a version tag runs [the release workflow](.github/workflows/release.yml):
+tests and lint on Linux, static CGO builds for amd64 and arm64, smoke tests on
+both (arm64 via QEMU), archive/checksum creation and a draft GitHub release.
+Publish that draft only after the build and asset checks pass.
+
+Live mainnet/testnet acceptance remains separate. Before operating with real
+votes, run `check` and review dry-run output on the intended node. On an isolated
+testnet, verify project yes→no copying, same-value manual takeover, a manual vote
+while copying, phase-payout copying/manual override and a phase revision. No
+live voting acceptance is implied by the offline tests.
+
+## License
+
+GPL-3.0; see [LICENSE](LICENSE). Release archives also include dependency
+license and notice files, including the SDK and go-zenon licenses.

@@ -1,0 +1,16 @@
+{
+  "nodeUrl": "ws://127.0.0.1:35998",
+  "chainId": 1,
+  "pollIntervalSeconds": 30,
+  "powTimeoutSeconds": 300,
+  "statePath": "state/state.json",
+  "delegations": [
+    {
+      "pillarName": "MyPillar",
+      "follow": "TrustedPillar",
+      "producerKeyFile": "/home/znn/.znn/wallet/producer",
+      "producerKeyIndex": 0,
+      "passwordEnv": "AZ_DELEGATE_PASSWORD_MYPILLAR"
+    }
+  ]
+}

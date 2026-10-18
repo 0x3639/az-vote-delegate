@@ -1,0 +1,61 @@
+name: Release
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    env:
+      GOWORK: 'off'
+      CGO_ENABLED: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+      - name: Require a version tag
+        run: |
+          [[ "$GITHUB_REF" == refs/tags/v* ]] || { echo 'Run this workflow against a version tag'; exit 1; }
+      - name: Install cross compiler and smoke-test runtime
+        run: sudo apt-get update && sudo apt-get install -y gcc-aarch64-linux-gnu qemu-user shellcheck
+      - run: go test -race ./...
+      - run: go vet ./...
+      - run: shellcheck install.sh scripts/test-install.sh
+      - uses: golangci/golangci-lint-action@v7
+        with:
+          version: v2.13.1
+      - name: Build static Linux binaries
+        env:
+          RELEASE_VERSION: ${{ github.ref_name }}
+        run: |
+          mkdir -p dist/amd64 dist/arm64
+          go list -m -json all | python3 scripts/collect-licenses.py dist/licenses
+          GOOS=linux GOARCH=amd64 CC=gcc go build -trimpath -tags netgo,osusergo -ldflags "-s -w -X main.version=$RELEASE_VERSION -linkmode external -extldflags '-static'" -o dist/amd64/az-vote-delegate ./cmd/az-vote-delegate
+          GOOS=linux GOARCH=arm64 CC=aarch64-linux-gnu-gcc go build -trimpath -tags netgo,osusergo -ldflags "-s -w -X main.version=$RELEASE_VERSION -linkmode external -extldflags '-static'" -o dist/arm64/az-vote-delegate ./cmd/az-vote-delegate
+          file dist/*/az-vote-delegate
+          file dist/amd64/az-vote-delegate | grep 'statically linked'
+          file dist/arm64/az-vote-delegate | grep 'statically linked'
+          dist/amd64/az-vote-delegate version
+          qemu-aarch64 dist/arm64/az-vote-delegate version
+          dist/amd64/az-vote-delegate --help
+      - name: Package and verify installer
+        run: |
+          cp LICENSE README.md dist/
+          tar -czf dist/az-vote-delegate_linux_amd64.tar.gz -C dist/amd64 az-vote-delegate -C .. LICENSE README.md licenses
+          tar -czf dist/az-vote-delegate_linux_arm64.tar.gz -C dist/arm64 az-vote-delegate -C .. LICENSE README.md licenses
+          cp install.sh dist/install.sh
+          (cd dist && sha256sum *.tar.gz install.sh > checksums.txt)
+          sh scripts/test-install.sh
+      - name: Create draft release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_VERSION: ${{ github.ref_name }}
+        run: |
+          gh release create "$RELEASE_VERSION" dist/*.tar.gz dist/checksums.txt dist/install.sh --verify-tag --draft --title "$RELEASE_VERSION — AZ vote manager" --notes-file RELEASE_NOTES.md
