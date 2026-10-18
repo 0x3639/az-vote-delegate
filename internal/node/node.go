@@ -168,6 +168,14 @@ func (n *Node) ListVotables(ctx context.Context) ([]delegate.Votable, error) {
 	if err != nil {
 		return nil, err
 	}
+	projects, err := n.projects(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return selectVotables(projects, now)
+}
+
+func (n *Node) projects(ctx context.Context) ([]*embedded.Project, error) {
 	var projects []*embedded.Project
 	seen := map[types.Hash]bool{}
 	count := -1
@@ -199,7 +207,7 @@ func (n *Node) ListVotables(ctx context.Context) ([]delegate.Votable, error) {
 			return nil, errors.New("incomplete project list")
 		}
 	}
-	return selectVotables(projects, now)
+	return projects, nil
 }
 func selectVotables(projects []*embedded.Project, now time.Time) ([]delegate.Votable, error) {
 	var result []delegate.Votable

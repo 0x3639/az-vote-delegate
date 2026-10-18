@@ -107,7 +107,7 @@ func Run(ctx context.Context, path string) error {
 			mode = "LIVE — votes can be published"
 		}
 		action := ""
-		options := []huh.Option[string]{huh.NewOption("Project proposals", "projects"), huh.NewOption("Phase payouts / payment requests", "phases"), huh.NewOption("Choose pillar to copy", "follow"), huh.NewOption("Pending transactions & manual overrides", "activity"), huh.NewOption("Pause / enable live voting", "mode"), huh.NewOption("Refresh", "refresh"), huh.NewOption("Exit (service keeps running)", "exit")}
+		options := []huh.Option[string]{huh.NewOption("Vote on unanswered AZ proposals", "projects"), huh.NewOption("Vote on unanswered phase payouts", "phases"), huh.NewOption("Choose pillar to copy", "follow"), huh.NewOption("Pending transactions & manual overrides", "activity"), huh.NewOption("Pause / enable live voting", "mode"), huh.NewOption("Refresh", "refresh"), huh.NewOption("Exit (service keeps running)", "exit")}
 		description := fmt.Sprintf("%s  ·  Chain %d\n", mode, s.ChainID)
 		for _, d := range s.Delegations {
 			description += Clean(d.Pillar) + " follows " + Clean(d.Follow) + "\n"
@@ -122,11 +122,11 @@ func Run(ctx context.Context, path string) error {
 		case "exit":
 			return nil
 		case "projects", "phases":
-			err = votables(ctx, c, s, action == "phases")
+			err = votables(ctx, c, action == "phases")
 		case "follow":
 			err = follow(ctx, c, s)
 		case "activity":
-			err = activity(ctx, s)
+			err = activity(ctx, c, s)
 		case "mode":
 			title := "Enable live voting for projects AND phase payouts?"
 			if s.Live {
@@ -166,21 +166,13 @@ func follow(ctx context.Context, c config.Config, s *control.Snapshot) error {
 	if err != nil {
 		return err
 	}
+	fmt.Fprintln(os.Stderr, "Loading pillar voting participation…")
 	res, err := control.Call(ctx, c, &control.Request{Action: "pillars"})
 	if err != nil {
 		return err
 	}
-	options := []huh.Option[string]{}
-	for _, name := range res.Pillars {
-		if name != pillar {
-			options = append(options, huh.NewOption(Clean(name), name))
-		}
-	}
-	if len(options) == 0 {
-		return errors.New("no other active pillars")
-	}
-	chosen := ""
-	if err = form(ctx, huh.NewSelect[string]().Title("Copy votes from").Description("Type to search. Applies to project proposals and phase-payout requests; existing manual overrides stay in place.").Filtering(true).Options(options...).Value(&chosen)); err != nil {
+	chosen, err := chooseDelegate(ctx, res.Candidates, pillar)
+	if err != nil {
 		return err
 	}
 	yes, err := confirm(ctx, fmt.Sprintf("Have %s copy %s's votes?", Clean(pillar), Clean(chosen)))
@@ -190,25 +182,35 @@ func follow(ctx context.Context, c config.Config, s *control.Snapshot) error {
 	_, err = control.Call(ctx, c, &control.Request{Action: "follow", Pillar: pillar, Follow: chosen})
 	return err
 }
-func votables(ctx context.Context, c config.Config, s *control.Snapshot, phases bool) error {
-	options := []huh.Option[int]{}
-	for i, r := range s.Rows {
-		if (r.Votable.Kind == "phase") == phases {
-			label := Clean(r.Votable.Name)
-			if phases {
-				label = Clean(r.Votable.ProjectName) + " / " + label
-			}
-			options = append(options, huh.NewOption(fmt.Sprintf("%s  ·  %s  ·  you: %s / delegate: %s", label, Clean(r.Pillar), delegate.VoteText(r.Owner), delegate.VoteText(r.Delegate)), i))
-		}
+func votables(ctx context.Context, c config.Config, phases bool) error {
+	// Refresh from the node when opening a list; the poll snapshot can predate
+	// a copy vote or a manual vote made elsewhere.
+	fresh, err := control.Call(ctx, c, &control.Request{Action: "requests"})
+	if err != nil {
+		return err
 	}
-	title := "Project proposals"
+	if fresh.Snapshot == nil {
+		return errors.New("request list unavailable")
+	}
+	s := fresh.Snapshot
+	options := []huh.Option[int]{}
+	indices := unvotedRows(s, phases)
+	for _, i := range indices {
+		r := s.Rows[i]
+		label := Clean(r.Votable.Name)
+		if phases {
+			label = Clean(r.Votable.ProjectName) + " / " + label
+		}
+		options = append(options, huh.NewOption(fmt.Sprintf("%s  ·  %s  ·  delegate: %s", label, Clean(r.Pillar), delegate.VoteText(r.Delegate)), i))
+	}
+	title := "Unanswered AZ proposals"
 	if phases {
-		title = "Phase payouts / payment requests"
+		title = "Unanswered phase payouts"
 	}
 	if len(options) == 0 {
-		return note(ctx, title, "No open requests in the latest snapshot. Refresh to check again. No vote can be cast on a closed or superseded request.")
+		return note(ctx, title, "No unanswered open requests. Already-voted requests are hidden; queued manual choices are in Activity. Refresh to check again.")
 	}
-	index := 0
+	index := indices[0]
 	if err := form(ctx, huh.NewSelect[int]().Title(title).Options(options...).Value(&index)); err != nil {
 		return err
 	}
@@ -216,7 +218,7 @@ func votables(ctx context.Context, c config.Config, s *control.Snapshot, phases 
 	v := r.Votable
 	details := fmt.Sprintf("Project: %s\nRequest: %s\nRequested: %s ZNN + %s QSR\nYour vote: %s    Delegate: %s\nStatus: %s\nID: %s\n\n%s\n\n%s", Clean(v.ProjectName), Clean(v.Name), v.ZNN, v.QSR, delegate.VoteText(r.Owner), delegate.VoteText(r.Delegate), r.Action, v.ID, preview(v.Description, 600), preview(v.URL, 150))
 	action := ""
-	if err := form(ctx, huh.NewSelect[string]().Title(Clean(v.Name)).Description(details).Options(huh.NewOption("Vote YES manually", "yes"), huh.NewOption("Vote NO manually", "no"), huh.NewOption("Vote ABSTAIN manually", "abstain"), huh.NewOption("Resume copying for this request", "resume"), huh.NewOption("Back", "back")).Value(&action)); err != nil {
+	if err := form(ctx, huh.NewSelect[string]().Title(Clean(v.Name)).Description(details).Options(huh.NewOption("Vote YES manually", "yes"), huh.NewOption("Vote NO manually", "no"), huh.NewOption("Vote ABSTAIN manually", "abstain"), huh.NewOption("Back", "back")).Value(&action)); err != nil {
 		return err
 	}
 	if action == "back" {
@@ -225,25 +227,19 @@ func votables(ctx context.Context, c config.Config, s *control.Snapshot, phases 
 	if !s.Live {
 		return note(ctx, "Dry-run mode", "Enable live voting from the main menu before casting or resuming votes.")
 	}
-	message := fmt.Sprintf("Vote %s on %s? This stops copy voting for this request, even when your choice matches the existing vote.", strings.ToUpper(action), Clean(v.Name))
-	if action == "resume" {
-		message = "Remove the manual override and resume copying for this request?"
-	}
+	message := fmt.Sprintf("Vote %s on %s? This stops copy voting for this request, even if the delegate later changes their vote.", strings.ToUpper(action), Clean(v.Name))
 	yes, err := confirm(ctx, message)
 	if err != nil || !yes {
 		return err
 	}
-	req := &control.Request{Action: "vote", Pillar: r.Pillar, ID: v.ID, Vote: action}
-	if action == "resume" {
-		req.Action = "resume"
-	}
+	req := &control.Request{Action: "vote", Pillar: r.Pillar, ID: v.ID, Vote: action, OnlyUnvoted: true}
 	res, err := control.Call(ctx, c, req)
 	if err != nil {
 		return err
 	}
 	return note(ctx, "Choice saved", res.Message+"\nUse Pending transactions & manual overrides to check progress.")
 }
-func activity(ctx context.Context, s *control.Snapshot) error {
+func activity(ctx context.Context, c config.Config, s *control.Snapshot) error {
 	lines := []string{}
 	if s.State != nil {
 		for pillar, entries := range s.State.Pillars {
@@ -268,7 +264,36 @@ func activity(ctx context.Context, s *control.Snapshot) error {
 	if body == "" {
 		body = "No pending submissions or manual overrides."
 	}
-	return note(ctx, "Activity", body)
+	// Keep resume available after a manual vote leaves the unanswered list.
+	type target struct{ pillar, id string }
+	targets := []target{}
+	for _, r := range s.Rows {
+		if s.State == nil {
+			continue
+		}
+		e := s.State.Pillars[r.Pillar][r.Votable.ID]
+		if e != nil && (e.ManualVote != nil || e.OwnerOverride) {
+			targets = append(targets, target{r.Pillar, r.Votable.ID})
+		}
+	}
+	options := []huh.Option[int]{huh.NewOption("Back", -1)}
+	for i, t := range targets {
+		options = append(options, huh.NewOption("Resume copying: "+Clean(t.pillar)+" · "+t.id, i))
+	}
+	selected := -1
+	if err := form(ctx, huh.NewSelect[int]().Title("Activity").Description(body).Options(options...).Value(&selected)); err != nil {
+		return err
+	}
+	if selected < 0 {
+		return nil
+	}
+	ok, err := confirm(ctx, "Remove this manual override and resume copying for this request?")
+	if err != nil || !ok {
+		return err
+	}
+	t := targets[selected]
+	_, err = control.Call(ctx, c, &control.Request{Action: "resume", Pillar: t.pillar, ID: t.id})
+	return err
 }
 
 func Wizard(ctx context.Context, path string) error {
@@ -285,13 +310,14 @@ func Wizard(ctx context.Context, path string) error {
 	endpoint := "ws://127.0.0.1:35998"
 	chain := "1"
 	source := "znnd"
+	installService := true
 	if err = form(ctx, huh.NewInput().Title("Your Zenon node URL").Value(&endpoint).Validate(required), huh.NewInput().Title("Expected chain ID (mainnet: 1)").Value(&chain).Validate(func(s string) error {
 		v, e := strconv.ParseUint(s, 10, 64)
 		if e != nil || v == 0 {
 			return errors.New("enter a positive chain ID")
 		}
 		return nil
-	}), huh.NewSelect[string]().Title("Producer key").Options(huh.NewOption("Use existing znnd / NOMCTL configuration", "znnd"), huh.NewOption("Choose a key file and enter its password", "file")).Value(&source)); err != nil {
+	}), huh.NewConfirm().Title("Install and start a background service after setup?").Description("Keeps running after you close the menu. Starts in dry-run mode until you enable live voting.").Value(&installService), huh.NewSelect[string]().Title("Producer key").Options(huh.NewOption("Use existing znnd / NOMCTL configuration", "znnd"), huh.NewOption("Choose a key file and enter its password", "file")).Value(&source)); err != nil {
 		return err
 	}
 	p := setup.Producer{KeyFilePath: filepath.Join(home, ".znn", "wallet", "producer")}
@@ -338,29 +364,24 @@ func Wizard(ctx context.Context, path string) error {
 	if err != nil {
 		return err
 	}
-	options := []huh.Option[string]{}
-	names := []string{}
 	for name, info := range pillars {
 		if info.RevokeTimestamp != 0 {
 			continue
 		}
 		if info.ProducerAddress == *address {
 			d.PillarName = name
-		} else {
-			names = append(names, name)
 		}
 	}
 	if d.PillarName == "" {
 		return errors.New("this producer key does not match an active pillar on that node")
 	}
-	sort.Strings(names)
-	for _, name := range names {
-		options = append(options, huh.NewOption(Clean(name), name))
+	fmt.Fprintln(os.Stderr, "Loading pillar voting participation…")
+	candidates, err := n.Participation(ctx)
+	if err != nil {
+		return err
 	}
-	if len(options) == 0 {
-		return errors.New("no delegate pillars found")
-	}
-	if err = form(ctx, huh.NewSelect[string]().Title("Copy votes from").Description("Your pillar: "+Clean(d.PillarName)+". Type to search.").Filtering(true).Options(options...).Value(&d.Follow)); err != nil {
+	d.Follow, err = chooseDelegate(ctx, candidates, d.PillarName)
+	if err != nil {
 		return err
 	}
 	base, err := filepath.Abs(filepath.Dir(path))
@@ -389,7 +410,13 @@ func Wizard(ctx context.Context, path string) error {
 	if err = config.Save(path, c); err != nil {
 		return err
 	}
-	return note(ctx, "Setup complete", "Open the menu to start the background service. It starts in dry-run mode; review project and phase-payout decisions before enabling live votes.")
+	if installService {
+		if err = setup.InstallService(path); err != nil {
+			return note(ctx, "Configuration saved; service not started", Clean(err.Error())+"\nUse the menu to retry starting the service.")
+		}
+		return note(ctx, "Setup complete — service installed", "The background service starts in dry-run mode. Review the menu, then select Pause / enable live voting to start copying project and phase-payout votes. Run az-vote-delegate anytime to reopen the menu.")
+	}
+	return note(ctx, "Setup saved", "Service installation was skipped. Start it later from the menu, or run az-vote-delegate run in another terminal. Run az-vote-delegate anytime to reopen the menu.")
 }
 
 func preview(s string, limit int) string {

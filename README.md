@@ -11,8 +11,12 @@ On a Linux amd64 or arm64 pillar host:
 
 ```sh
 curl -fsSL https://raw.githubusercontent.com/0x3639/az-vote-delegate/main/install.sh | sudo sh
-sudo az-vote-delegate
 ```
+
+The installer automatically opens terminal setup, including when piped from curl.
+Run `az-vote-delegate` (or `sudo az-vote-delegate`) anytime to reopen the menu.
+Without a terminal, or with `AZ_NO_UI=1`, it installs the binary and prints the
+command to run later.
 
 Run the app as the user who owns your producer key. `sudo` is appropriate for a
 root-operated znnd/NOMCTL installation. For an unprivileged node user, install
@@ -20,14 +24,15 @@ without `sudo`; the binary goes to `~/.local/bin` and the installer prints its
 full path. Root installation uses `/usr/local/bin`.
 
 The installer downloads a prebuilt release, verifies its SHA-256 checksum and
-replaces the executable atomically. It does not touch the node, producer key,
-application configuration or votes. Release binaries are static: no Go compiler,
-C compiler, Docker, `gum` or `jq` is required on the pillar host.
+replaces the executable atomically. The download step does not change node
+settings or votes. The setup menu asks before saving configuration and installing
+the service. Release binaries are static: no Go compiler, C compiler, Docker,
+`gum` or `jq` is required on the pillar host.
 
 To pin a release:
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/0x3639/az-vote-delegate/main/install.sh | sudo env AZ_VERSION=v0.1.1 sh
+curl -fsSL https://raw.githubusercontent.com/0x3639/az-vote-delegate/main/install.sh | sudo env AZ_VERSION=v0.2.0 sh
 ```
 
 Run the installer again to upgrade, then restart the voting service. Use
@@ -38,12 +43,13 @@ Run the installer again to upgrade, then restart the voting service. Use
 The setup wizard guides you through:
 
 1. Your local/trusted node URL and expected chain ID (mainnet is `1`).
-2. Importing the producer settings from your existing znnd `config.json`, or
+2. Confirming whether to install and start the background service after setup.
+3. Importing the producer settings from your existing znnd `config.json`, or
    entering a key-file path, derivation index and password. No key is generated.
-3. Identifying your pillar from the producer address and selecting another
-   active pillar from a searchable list.
-4. Saving a private application config and a mode-0600 password file.
-5. Starting the background service from the menu, initially in **dry-run**.
+4. Identifying your pillar and choosing a delegate from the top 30 active voters,
+   shuffled and shown with their voting participation.
+5. Saving a private application config and a mode-0600 password file, then
+   installing and starting the service if you confirmed it. It starts in **dry-run**.
 
 Review the proposed decisions, then select **Pause / enable live voting** to
 start publishing. The saved mode survives service restarts. Closing the menu
@@ -67,16 +73,37 @@ reconnect from the menu. The service and UI must use the same config and user.
 
 ## The menu
 
-- **Project proposals**: inspect open initial funding proposals and vote manually.
-- **Phase payouts / payment requests**: inspect the current unpaid voting phase,
-  its parent project, description, URL and requested ZNN/QSR. Copy voting and
-  manual voting work here exactly as they do for project proposals.
-- **Choose pillar to copy**: search the live pillar list and save a new delegate.
-  Existing manual overrides stay in place.
+- **Vote on unanswered AZ proposals**: inspect and vote on open initial funding
+  proposals your pillar has not voted on yet.
+- **Vote on unanswered phase payouts**: inspect unpaid phase requests your pillar
+  has not voted on, with their parent project, description, URL and requested
+  ZNN/QSR. Copy voting and manual voting work for both kinds of request.
+- **Choose pillar to copy**: choose from the shuffled top 30 active voters, with
+  participation shown beside each name. Existing manual overrides stay in place.
 - **Pending transactions & manual overrides**: inspect queued choices, confirmed
-  manual overrides and pending block hashes.
+  manual overrides and pending block hashes, or resume copying for an override.
 - **Pause / enable live voting**: pause new submissions without changing already
   submitted transactions.
+
+The manual lists fetch fresh votes from the node. Any recorded yes, no or abstain
+hides that request; queued manual choices also leave the list and appear in
+Activity. A final check rejects the selection if your pillar has voted since you
+opened the list. A pending copy that has not executed can still be selected for
+a manual override.
+
+### Delegate participation
+
+The picker ranks active pillars by the number of distinct requests they voted
+on, excludes your own pillar, takes the top 30 (or all if fewer), then shuffles
+the display each time it opens. Equal counts are randomly ordered before the
+cutoff so ties do not favor alphabetically earlier names.
+
+Each option shows `82.0% participation · 82/100 requests`, for example. Yes, no
+and abstain all count. The denominator is all project proposals and retained
+phase requests returned by the node, including closed requests. This is not
+adjusted for when a pillar joined; deleted/replaced phase revisions are not
+available through this API. With no recorded requests, the menu says so rather
+than showing a fabricated percentage. Changing the delegate uses the same picker.
 
 The app votes on payment requests; it does not submit a project owner's payment
 request or promise that voting will immediately release funds. Contract rules
@@ -85,8 +112,9 @@ and the votes of other pillars still determine whether a phase passes.
 ## Manual votes take priority
 
 A manual vote from this app records an explicit, durable override **before** it
-is acknowledged. This includes selecting the same vote the daemon previously
-cast: a manual yes remains a manual yes even if the delegate later changes to no.
+is acknowledged. A manual yes remains a manual yes even if the delegate later
+changes to no. The manual lists show unanswered requests; the underlying override
+tracking also distinguishes an explicit same-value choice from a copied vote.
 The service is the only signer and state writer; the UI uses its owner-only Unix
 socket and never starts a competing signer.
 
@@ -98,8 +126,8 @@ than blindly retried. You may need to inspect that transaction on your trusted
 node before proceeding. If the request closes while an earlier transaction is
 pending, your queued choice cannot reopen it or undo the contract's decision.
 
-The manual override remains for that request until you choose **Resume copying
-for this request**, the request closes, or its confirmed votes are reset. Updating
+The manual override remains for that request until you choose **Resume copying**
+in Activity, the request closes, or its confirmed votes are reset. Updating
 a phase in go-zenon replaces its votable ID; the revised payout request gets its
 own fresh voting round. The app follows the current phase ID and never applies
 an old phase's override to its replacement. Projects and phases have independent
@@ -201,8 +229,10 @@ sh scripts/test-install.sh
 The Makefile disables a parent `go.work`. Tests cover reconciliation, native
 znnd wallet compatibility, signed embedded votes and PoW, project/phase paging,
 manual same-value overrides, restart recovery, interruption of copy preparation,
-waiting for pending copies, phase-payout replacement, and installer checksum
-failure. No operator credentials are used in tests.
+waiting for pending copies, phase-payout replacement, participation ranking and
+shuffling, unanswered-request filtering, and installer checksum failure. The
+installer tests also exercise a piped installation in a pseudo-terminal to verify
+automatic menu launch and its opt-out. No operator credentials are used in tests.
 
 Pushing a version tag runs [the release workflow](.github/workflows/release.yml):
 tests and lint on Linux, static CGO builds for amd64 and arm64, smoke tests on

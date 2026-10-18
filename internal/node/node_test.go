@@ -135,6 +135,8 @@ type rpcFixture struct {
 	journaled      bool
 	requireJournal bool
 	reject         bool
+	pillarVotes    map[string]delegate.Votes
+	pillarList     []map[string]any
 	votes          []*definition.PillarVote
 	projects       []*embedded.Project
 	projectPages   []uint32
@@ -174,6 +176,9 @@ func newNode(t *testing.T) (*Node, *rpcFixture) {
 			result = f.lookup
 		case "embedded.pillar.getAll":
 			result = map[string]any{"count": 2, "list": []map[string]any{{"name": "A", "producerAddress": f.producer, "weight": "0", "currentStats": map[string]any{}}, {"name": "B", "weight": "0", "currentStats": map[string]any{}}}}
+			if f.pillarList != nil {
+				result = map[string]any{"count": len(f.pillarList), "list": f.pillarList}
+			}
 		case "embedded.accelerator.getAll":
 			var page, size uint32
 			if err := json.Unmarshal(req.Params[0], &page); err != nil {
@@ -187,7 +192,12 @@ func newNode(t *testing.T) (*Node, *rpcFixture) {
 			end := min(start+int(size), len(f.projects))
 			list := make([]map[string]any, 0, end-start)
 			for _, p := range f.projects[start:end] {
-				list = append(list, map[string]any{"id": p.Id, "status": p.Status, "creationTimestamp": p.CreationTimestamp, "votes": p.Votes, "znnFundsNeeded": "0", "qsrFundsNeeded": "0"})
+				phases := []map[string]any{}
+				for _, phase := range p.Phases {
+					info := phase.Phase
+					phases = append(phases, map[string]any{"phase": map[string]any{"id": info.Id, "projectID": info.ProjectID, "status": info.Status, "znnFundsNeeded": "0", "qsrFundsNeeded": "0"}})
+				}
+				list = append(list, map[string]any{"id": p.Id, "status": p.Status, "creationTimestamp": p.CreationTimestamp, "votes": p.Votes, "znnFundsNeeded": "0", "qsrFundsNeeded": "0", "phaseIds": p.PhaseIds, "phases": phases})
 			}
 			result = map[string]any{"count": len(f.projects), "list": list}
 		case "embedded.accelerator.getPillarVotes":
@@ -196,7 +206,19 @@ func newNode(t *testing.T) (*Node, *rpcFixture) {
 				t.Error(err)
 			}
 			f.voteSizes = append(f.voteSizes, len(ids))
-			if f.votes != nil {
+			if f.pillarVotes != nil {
+				var name string
+				if err := json.Unmarshal(req.Params[0], &name); err != nil {
+					t.Error(err)
+				}
+				batch := make([]*definition.PillarVote, len(ids))
+				for i, id := range ids {
+					if v := f.pillarVotes[name][id.String()]; v != nil {
+						batch[i] = &definition.PillarVote{Id: id, Name: name, Vote: uint8(*v)}
+					}
+				}
+				result = batch
+			} else if f.votes != nil {
 				result = f.votes
 			} else {
 				result = make([]*definition.PillarVote, len(ids))

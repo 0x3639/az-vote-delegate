@@ -252,3 +252,23 @@ New state fields manualVote and manualConfirmed persist UI ownership. The live
 config field saves the operator's chosen voting mode. The installed service
 starts in dry-run until live voting is explicitly enabled. See README.md for
 current setup, operation and release instructions.
+
+## 9. Installation and delegate-picker amendment (2026-10-18)
+
+The curl installer launches the terminal menu through /dev/tty. Setup explicitly
+asks whether to install and start the service. Noninteractive installations and
+AZ_NO_UI=1 skip the menu. Later runs of az-vote-delegate reopen it.
+
+Both setup and delegate changes show the top 30 active pillars other than the
+operator's own pillar, ranked by the number of retained AZ project and phase
+requests with a recorded vote. Equal counts are shuffled before the cutoff, then
+the selected 30 are shuffled for display. Each shows voted/total and a percentage.
+The denominator includes all retained requests, even closed ones. It is not
+adjusted for historical pillar eligibility or deleted phase revisions.
+
+Manual project and phase lists read fresh chain votes and show only unanswered
+requests. All three vote values count as answered. Queued manual choices move
+to Activity, which also offers resuming copy voting for existing overrides. The
+service rechecks that a selected request remains unanswered before queuing a
+manual choice. Explicit override persistence and pending-transaction handling
+remain unchanged underneath this menu filter.

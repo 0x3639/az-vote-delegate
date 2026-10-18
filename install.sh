@@ -1,5 +1,5 @@
 #!/bin/sh
-# Install a verified prebuilt binary. Does not touch node keys, config or votes.
+# Install a verified prebuilt binary, then open setup on the controlling terminal.
 set -eu
 repo=0x3639/az-vote-delegate
 case "$(uname -s)" in Linux) os=linux ;; *) echo 'This installer supports Linux pillar hosts.' >&2; exit 1 ;; esac
@@ -41,3 +41,10 @@ printf '\nInstalled az-vote-delegate %s to %s\n' "$version" "$dest/az-vote-deleg
 printf 'Run %s to open setup and the interactive menu.\n' "$dest/az-vote-delegate"
 printf 'Run it as the user who owns your producer key (use sudo if your node runs as root).\n'
 printf 'For an upgrade, restart the voting service after installation.\n'
+if [ "${AZ_NO_UI:-0}" != 1 ] && [ -t 2 ] && ( : </dev/tty ) 2>/dev/null; then
+  # curl | sh consumes stdin; the menu must read the operator's terminal.
+  cleanup
+  trap - EXIT HUP INT TERM
+  exec "$dest/az-vote-delegate" ui </dev/tty >/dev/tty 2>&1
+fi
+printf 'Automatic menu launch skipped (no terminal or AZ_NO_UI=1).\n'

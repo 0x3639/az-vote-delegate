@@ -14,7 +14,6 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-	"sort"
 	"sync"
 	"time"
 
@@ -38,23 +37,25 @@ type Snapshot struct {
 	Error       string
 }
 type Request struct {
-	Action string
-	Pillar string
-	ID     string
-	Vote   string
-	Follow string
-	Live   bool
+	Action      string
+	Pillar      string
+	ID          string
+	Vote        string
+	Follow      string
+	Live        bool
+	OnlyUnvoted bool
 }
 type Response struct {
-	Snapshot *Snapshot `json:"snapshot,omitempty"`
-	Pillars  []string  `json:"pillars,omitempty"`
-	Message  string    `json:"message,omitempty"`
-	Error    string    `json:"error,omitempty"`
+	Snapshot   *Snapshot            `json:"snapshot,omitempty"`
+	Candidates []node.Participation `json:"candidates,omitempty"`
+	Message    string               `json:"message,omitempty"`
+	Error      string               `json:"error,omitempty"`
 }
 type backend interface {
 	delegate.Backend
 	Check(context.Context) error
 	Pillars(context.Context) (map[string]*embedded.PillarInfo, error)
+	Participation(context.Context) ([]node.Participation, error)
 	Close()
 }
 
@@ -299,8 +300,8 @@ func (m *Manager) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "invalid request", 400)
 		return
 	}
-	if req.Action == "pillars" {
-		response, err := m.readPillars(r.Context())
+	if req.Action == "pillars" || req.Action == "requests" {
+		response, err := m.read(r.Context(), req.Action)
 		if err != nil {
 			response.Error = err.Error()
 		}
@@ -349,20 +350,6 @@ func (m *Manager) command(ctx context.Context, req Request) (Response, error) {
 	}
 	defer n.Close()
 	m.engine.Backend = n
-	if req.Action == "pillars" {
-		pillars, err := n.Pillars(ctx)
-		if err != nil {
-			return Response{}, err
-		}
-		names := []string{}
-		for _, p := range pillars {
-			if p.RevokeTimestamp == 0 {
-				names = append(names, p.Name)
-			}
-		}
-		sort.Strings(names)
-		return Response{Pillars: names}, nil
-	}
 	if req.Action == "mode" {
 		next := m.cfg
 		next.Live = req.Live
@@ -424,6 +411,15 @@ func (m *Manager) command(ctx context.Context, req Request) (Response, error) {
 		}
 		if err = n.Check(ctx); err != nil {
 			return Response{}, err
+		}
+		if req.OnlyUnvoted {
+			votes, err := n.PillarVotes(ctx, d.PillarName, []string{req.ID})
+			if err != nil {
+				return Response{}, err
+			}
+			if votes[req.ID] != nil {
+				return Response{}, errors.New("your pillar has already voted on this request; refresh the list")
+			}
 		}
 		if err = m.engine.QueueManual(ctx, d, req.ID, v); err != nil {
 			return Response{}, err
@@ -495,24 +491,57 @@ func (m *Manager) open(c config.Config) (backend, error) {
 	return node.Open(c, m.keys, m.log)
 }
 
-func (m *Manager) readPillars(ctx context.Context) (Response, error) {
-	n, err := node.Open(m.readConfig, nil, m.log)
+func (m *Manager) read(ctx context.Context, action string) (Response, error) {
+	ctx, cancel := context.WithTimeout(ctx, 90*time.Second)
+	defer cancel()
+	// Read-only connections never wait for or cancel the signing worker.
+	var n backend
+	var err error
+	if m.factory != nil {
+		n, err = m.factory(m.readConfig)
+	} else {
+		n, err = node.Open(m.readConfig, nil, m.log)
+	}
 	if err != nil {
 		return Response{}, err
 	}
 	defer n.Close()
-	pillars, err := n.Pillars(ctx)
+	if action == "pillars" {
+		candidates, err := n.Participation(ctx)
+		return Response{Candidates: candidates}, err
+	}
+	m.cacheMu.RLock()
+	raw := append([]byte(nil), m.cache...)
+	m.cacheMu.RUnlock()
+	var response Response
+	if err = json.Unmarshal(raw, &response); err != nil || response.Snapshot == nil {
+		return Response{}, errors.New("service snapshot unavailable")
+	}
+	s := response.Snapshot
+	requests, err := n.ListVotables(ctx)
 	if err != nil {
 		return Response{}, err
 	}
-	names := []string{}
-	for _, p := range pillars {
-		if p.RevokeTimestamp == 0 {
-			names = append(names, p.Name)
+	ids := make([]string, 0, len(requests))
+	for _, v := range requests {
+		ids = append(ids, v.ID)
+	}
+	s.Rows = []delegate.Row{}
+	for _, d := range s.Delegations {
+		owner, err := n.PillarVotes(ctx, d.Pillar, ids)
+		if err != nil {
+			return Response{}, err
+		}
+		follow, err := n.PillarVotes(ctx, d.Follow, ids)
+		if err != nil {
+			return Response{}, err
+		}
+		for _, v := range requests {
+			s.Rows = append(s.Rows, delegate.Row{Pillar: d.Pillar, Follow: d.Follow, Votable: v, Owner: owner[v.ID], Delegate: follow[v.ID], Action: "open"})
 		}
 	}
-	sort.Strings(names)
-	return Response{Pillars: names}, nil
+	s.Updated, s.Error = time.Now().UTC(), ""
+	return response, nil
 }
 
 func (m *Manager) lockCommand(ctx context.Context) bool {

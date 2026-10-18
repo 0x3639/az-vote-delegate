@@ -15,6 +15,7 @@ import (
 
 	"github.com/0x3639/az-vote-delegate/internal/config"
 	"github.com/0x3639/az-vote-delegate/internal/delegate"
+	"github.com/0x3639/az-vote-delegate/internal/node"
 	"github.com/0x3639/znn-sdk-go/api/embedded"
 )
 
@@ -31,6 +32,9 @@ func (f *fakeNode) Check(context.Context) error { return nil }
 func (f *fakeNode) Close()                      {}
 func (f *fakeNode) Pillars(context.Context) (map[string]*embedded.PillarInfo, error) {
 	return map[string]*embedded.PillarInfo{"A": {Name: "A"}, "B": {Name: "B"}, "C": {Name: "C"}}, nil
+}
+func (f *fakeNode) Participation(context.Context) ([]node.Participation, error) {
+	return []node.Participation{{Name: "B", Voted: 3, Total: 4}}, nil
 }
 func (f *fakeNode) ListVotables(context.Context) ([]delegate.Votable, error) {
 	return []delegate.Votable{{ID: id, Kind: "phase", Name: "Delivery payment"}}, nil
@@ -154,5 +158,47 @@ func TestFollowChangesPreserveManualOverride(t *testing.T) {
 	response := command(t, m, Request{Action: "follow", Pillar: "A", Follow: "C"})
 	if response.Error != "" || m.cfg.Delegations[0].Follow != "C" || m.engine.State.Entries("A")[id].ManualVote == nil {
 		t.Fatal(response)
+	}
+}
+
+func TestFreshRequestsAndParticipationDoNotAcquireSigningLock(t *testing.T) {
+	m, f := manager(t)
+	// The cached status predates this vote. The menu must read fresh votes.
+	no := delegate.No
+	f.owner = &no
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	done := make(chan Response, 1)
+	go func() { done <- command(t, m, Request{Action: "requests"}) }()
+	select {
+	case res := <-done:
+		if res.Error != "" || res.Snapshot == nil || len(res.Snapshot.Rows) != 1 || !delegate.Equal(res.Snapshot.Rows[0].Owner, &no) {
+			t.Fatalf("fresh request read: %+v", res)
+		}
+	case <-time.After(3 * time.Second):
+		t.Fatal("request list blocked on signing lock")
+	}
+	res := command(t, m, Request{Action: "pillars"})
+	if res.Error != "" || len(res.Candidates) != 1 || res.Candidates[0].Voted != 3 || res.Candidates[0].Total != 4 {
+		t.Fatalf("participation lost: %+v", res)
+	}
+	if len(m.engine.State.Pillars) != 0 || f.sends != 0 {
+		t.Fatal("read-only menu mutated voting state")
+	}
+}
+
+func TestUnansweredMenuRejectsVoteCompletedSinceListing(t *testing.T) {
+	m, f := manager(t)
+	for _, vote := range []delegate.Vote{delegate.Yes, delegate.No, delegate.Abstain} {
+		f.owner = &vote
+		res := command(t, m, Request{Action: "vote", Pillar: "A", ID: id, Vote: "yes", OnlyUnvoted: true})
+		if !strings.Contains(res.Error, "already voted") || len(m.engine.State.Pillars) != 0 {
+			t.Fatalf("overwrote an answered request: %+v", res)
+		}
+	}
+	f.owner = nil
+	res := command(t, m, Request{Action: "vote", Pillar: "A", ID: id, Vote: "no", OnlyUnvoted: true})
+	if res.Error != "" || m.engine.State.Pillars["A"][id].ManualVote == nil {
+		t.Fatalf("unanswered phase could not be voted on: %+v", res)
 	}
 }

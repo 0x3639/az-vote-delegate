@@ -5,7 +5,16 @@ root=$(pwd)
 work=$(mktemp -d)
 trap 'rm -rf "$work"' EXIT HUP INT TERM
 mkdir -p "$work/mocks" "$work/assets" "$work/package" "$work/bin"
-printf '#!/bin/sh\necho "az-vote-delegate test"\n' > "$work/package/az-vote-delegate"
+cat > "$work/package/az-vote-delegate" <<'MOCK'
+#!/bin/sh
+set -eu
+if [ -n "${TEST_UI_MARKER:-}" ]; then
+  test -t 0
+  test -t 2
+  printf '%s\n' "$*" > "$TEST_UI_MARKER"
+fi
+echo 'az-vote-delegate test'
+MOCK
 chmod +x "$work/package/az-vote-delegate"
 tar -C "$work/package" -czf "$work/assets/az-vote-delegate_linux_amd64.tar.gz" az-vote-delegate
 (cd "$work/assets" && sha256sum -- *.tar.gz > checksums.txt)
@@ -25,8 +34,9 @@ cp "$TEST_ASSETS/${url##*/}" "$out"
 MOCK
 chmod +x "$work/mocks/"*
 export TEST_ASSETS="$work/assets"
-PATH="$work/mocks:$PATH" AZ_VERSION=v0.1.0 AZ_INSTALL_DIR="$work/bin" sh "$root/install.sh"
+PATH="$work/mocks:$PATH" AZ_NO_UI=1 AZ_VERSION=v0.1.0 AZ_INSTALL_DIR="$work/bin" sh "$root/install.sh"
 [ -x "$work/bin/az-vote-delegate" ]
+TEST_INSTALLER="$root/install.sh" PATH="$work/mocks:$PATH" AZ_VERSION=v0.1.0 AZ_INSTALL_DIR="$work/bin" python3 scripts/test-install-tty.py "$work"
 printf 'existing binary\n' > "$work/bin/az-vote-delegate"
 printf 'corrupted\n' >> "$work/assets/az-vote-delegate_linux_amd64.tar.gz"
 if PATH="$work/mocks:$PATH" AZ_VERSION=v0.1.0 AZ_INSTALL_DIR="$work/bin" sh "$root/install.sh"; then echo 'Corrupt archive was accepted' >&2; exit 1; fi
