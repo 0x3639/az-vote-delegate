@@ -27,7 +27,7 @@ C compiler, Docker, `gum` or `jq` is required on the pillar host.
 To pin a release:
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/0x3639/az-vote-delegate/main/install.sh | sudo env AZ_VERSION=v0.1.0 sh
+curl -fsSL https://raw.githubusercontent.com/0x3639/az-vote-delegate/main/install.sh | sudo env AZ_VERSION=v0.1.1 sh
 ```
 
 Run the installer again to upgrade, then restart the voting service. Use

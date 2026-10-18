@@ -28,7 +28,10 @@ printf '%s\n' "$expected" | grep -Eq '^[0-9a-f]{64}$' || { echo 'Missing or inva
 printf '%s  %s\n' "$expected" "$asset" > "$work/verify.txt"
 (cd "$work" && sha256sum --check --status verify.txt) || { echo 'Checksum verification failed. Nothing installed.' >&2; exit 1; }
 tar -xzf "$work/$asset" -C "$work" az-vote-delegate
-[ -f "$work/az-vote-delegate" ] && [ ! -L "$work/az-vote-delegate" ] || { echo 'Invalid release archive.' >&2; exit 1; }
+if [ ! -f "$work/az-vote-delegate" ] || [ -L "$work/az-vote-delegate" ]; then
+  echo 'Invalid release archive.' >&2
+  exit 1
+fi
 mkdir -p "$dest"
 staged=$(mktemp "$dest/.az-vote-delegate.XXXXXX")
 install -m 0755 "$work/az-vote-delegate" "$staged"

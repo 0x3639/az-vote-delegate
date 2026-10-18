@@ -8,7 +8,7 @@ mkdir -p "$work/mocks" "$work/assets" "$work/package" "$work/bin"
 printf '#!/bin/sh\necho "az-vote-delegate test"\n' > "$work/package/az-vote-delegate"
 chmod +x "$work/package/az-vote-delegate"
 tar -C "$work/package" -czf "$work/assets/az-vote-delegate_linux_amd64.tar.gz" az-vote-delegate
-(cd "$work/assets" && sha256sum *.tar.gz > checksums.txt)
+(cd "$work/assets" && sha256sum -- *.tar.gz > checksums.txt)
 cat > "$work/mocks/uname" <<'MOCK'
 #!/bin/sh
 case "$1" in -s) echo Linux ;; -m) echo x86_64 ;; esac
