@@ -1,13 +1,10 @@
-Adds application updates to the terminal menu.
+Fixes the patchy background in the terminal menu.
 
-- Displays a notice when a newer stable GitHub release is available, with installed and available versions. Checks run when opening the menu and on returning after 15 minutes; the menu option always checks again. No automatic installation occurs.
-- **Check for updates / upgrade** downloads and verifies the matching Linux release, checks the executable version, and atomically replaces the existing binary after confirmation.
-- Preserves configuration, voting mode, passwords and persistent manual overrides. Downloads happen while voting continues.
-- Restarts only the existing active systemd service with a matching generated unit, then reopens the updated menu. Stopped services stay stopped; foreground processes and custom units receive manual restart instructions. No additional service is created.
-- Rejects invalid checksums, wrong versions, downgrades and concurrent upgrades. Reports an installed binary separately from a failed service restart.
+- Menu text, borders, help and spacing now use the terminal's own background consistently, eliminating the dark blocks and gaps visible with custom terminal colors.
+- Text and selection colors adapt to dark or light terminal backgrounds. Confirmation buttons keep their contrasting fills.
 
-Use the curl installer once to upgrade from v0.2.5 or earlier. Subsequent upgrades can use the menu. Update notices appear inside the app, not as notifications while the menu is closed.
+Voting, saved settings, manual overrides and service behavior are unchanged.
 
-Validated offline with HTTP fixtures, temporary executables, keyboard navigation and mocked service commands. Linux amd64 and arm64 binaries and the installer are checked by the release workflow.
+From v0.2.6, choose **Check for updates / upgrade** in the main menu to install this release. Older versions can use the curl installer.
 
 **Compatibility:** This release supports the legacy fused-plasma / proof-of-work voting flow. Dynamic Plasma is not supported.

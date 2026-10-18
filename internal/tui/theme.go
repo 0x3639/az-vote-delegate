@@ -7,16 +7,16 @@ import (
 
 func menuTheme() *huh.Theme {
 	t := huh.ThemeBase()
-	// Explicit foreground/background pairs avoid inheriting a terminal's custom
-	// default text color or its remapped ANSI 0–15 palette. Keep inactive fields
-	// readable too: the setup wizard displays several fields at once.
-	background := lipgloss.Color("234")
-	text := lipgloss.Color("255")
-	accent := lipgloss.Color("120")
-	normal := lipgloss.NewStyle().Foreground(text).Background(background)
+	// Leave backgrounds transparent: nested Huh/Lipgloss views reset ANSI
+	// styles between text and padding, so painted backgrounds form patchwork.
+	// Use explicit palette colors for readable text on dark and light terminals.
+	text := lipgloss.AdaptiveColor{Light: "235", Dark: "255"}
+	accent := lipgloss.AdaptiveColor{Light: "22", Dark: "120"}
+	errorText := lipgloss.AdaptiveColor{Light: "124", Dark: "210"}
+	buttonText := lipgloss.Color("255")
+	normal := lipgloss.NewStyle().Foreground(text)
 	t.Form.Base = normal
 	t.Group.Base = normal
-	t.FieldSeparator = t.FieldSeparator.Background(background)
 	for _, f := range []*huh.FieldStyles{&t.Focused, &t.Blurred} {
 		for _, style := range []*lipgloss.Style{
 			&f.Base, &f.Card, &f.Title, &f.NoteTitle, &f.Description,
@@ -26,7 +26,7 @@ func menuTheme() *huh.Theme {
 			&f.TextInput.Text, &f.TextInput.Prompt, &f.TextInput.Placeholder,
 			&f.ErrorIndicator, &f.ErrorMessage,
 		} {
-			*style = style.Foreground(text).Background(background)
+			*style = style.Foreground(text)
 		}
 		f.Title = f.Title.Bold(true)
 		f.NoteTitle = f.NoteTitle.Bold(true)
@@ -35,13 +35,13 @@ func menuTheme() *huh.Theme {
 		f.SelectedPrefix = f.SelectedPrefix.Foreground(accent).Bold(true)
 		f.TextInput.Cursor = normal
 		f.TextInput.CursorText = normal
-		f.ErrorIndicator = f.ErrorIndicator.Foreground(lipgloss.Color("210")).Bold(true)
-		f.ErrorMessage = f.ErrorMessage.Foreground(lipgloss.Color("210")).Bold(true)
-		f.FocusedButton = f.FocusedButton.Foreground(lipgloss.Color("232")).Background(text).Bold(true)
-		f.BlurredButton = f.BlurredButton.Foreground(text).Background(lipgloss.Color("238"))
+		f.ErrorIndicator = f.ErrorIndicator.Foreground(errorText).Bold(true)
+		f.ErrorMessage = f.ErrorMessage.Foreground(errorText).Bold(true)
+		f.FocusedButton = f.FocusedButton.Foreground(lipgloss.Color("232")).Background(buttonText).Bold(true)
+		f.BlurredButton = f.BlurredButton.Foreground(buttonText).Background(lipgloss.Color("238"))
 		f.Next = f.FocusedButton
 	}
-	t.Focused.Base = t.Focused.Base.BorderForeground(accent).BorderBackground(background)
+	t.Focused.Base = t.Focused.Base.BorderForeground(accent)
 	t.Focused.Card = t.Focused.Base
 	t.Focused.Title = t.Focused.Title.Foreground(accent)
 	t.Focused.NoteTitle = t.Focused.NoteTitle.Foreground(accent)
