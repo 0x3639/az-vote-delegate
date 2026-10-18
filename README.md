@@ -5,7 +5,7 @@ to copy, review project proposals and phase-payout requests, or cast your own
 **yes / no / abstain** vote. Uses the existing pillar **producer key**, never the
 owner's stake key. The menu works over SSH.
 
-**Compatibility:** v0.2.4 supports the legacy fused-plasma / proof-of-work voting
+**Compatibility:** v0.2.5 supports the legacy fused-plasma / proof-of-work voting
 flow. Dynamic Plasma is not supported by this release.
 
 ## TL;DR — quick start
@@ -61,11 +61,31 @@ the service. Release binaries are static: no Go compiler, C compiler, Docker,
 To pin a release:
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/0x3639/az-vote-delegate/main/install.sh | sudo env AZ_VERSION=v0.2.4 sh
+curl -fsSL https://raw.githubusercontent.com/0x3639/az-vote-delegate/main/install.sh | sudo env AZ_VERSION=v0.2.5 sh
 ```
 
-Run the installer again to upgrade, then restart the voting service. Use
-`AZ_INSTALL_DIR=/absolute/path` to choose another binary directory.
+Run the installer again as the **same user**, using the **same install directory**,
+to upgrade. It detects the existing executable and replaces it in place; it does
+not create or start an additional service. Your configuration, voting mode and
+saved manual overrides stay in place. The menu reconnects to the existing service
+when it finds your configuration, instead of running first-time setup again.
+
+The running service keeps using its old executable until you restart it. For a
+root installation:
+
+```sh
+sudo systemctl restart az-vote-delegate.service
+```
+
+For a user installation, use `systemctl --user restart az-vote-delegate.service`.
+Restart replaces the running process for the same named service. Repeating
+service installation also uses that same unit name. A state-file lock prevents
+two workers from managing the same state at once. If you run in the foreground,
+stop that process before launching the upgraded version.
+
+Use `AZ_INSTALL_DIR=/absolute/path` to choose another binary directory. Switching
+users, configuration files or install directories is a separate installation,
+not an upgrade; keep using the original user and paths for normal reinstalls.
 
 ## First run
 
@@ -155,10 +175,19 @@ and the votes of other pillars still determine whether a phase passes.
 
 ## Manual votes take priority
 
+A manual vote affects **only that proposal or phase-payout request**. The service
+keeps running and copying all other eligible requests. There is no pause for a
+number of days and no timed expiry of your manual choice.
+
 A manual vote from this app records an explicit, durable override **before** it
 is acknowledged. A manual yes remains a manual yes even if the delegate later
 changes to no. The manual lists show unanswered requests; the underlying override
 tracking also distinguishes an explicit same-value choice from a copied vote.
+Overrides are stored locally by **pillar name + request ID** in the configured
+`statePath` file (normally `~/.config/az-vote-delegate/state/state.json`). Queued
+and confirmed manual choices survive service restarts, host reboots and binary
+upgrades. Keep this file when migrating the application.
+
 The service is the only signer and state writer; the UI uses its owner-only Unix
 socket and never starts a competing signer.
 

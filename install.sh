@@ -33,6 +33,11 @@ if [ ! -f "$work/az-vote-delegate" ] || [ -L "$work/az-vote-delegate" ]; then
   exit 1
 fi
 mkdir -p "$dest"
+upgrading=0
+if [ -e "$dest/az-vote-delegate" ] || [ -L "$dest/az-vote-delegate" ]; then
+  upgrading=1
+  printf 'Existing installation detected at %s; replacing the executable.\n' "$dest/az-vote-delegate"
+fi
 staged=$(mktemp "$dest/.az-vote-delegate.XXXXXX")
 install -m 0755 "$work/az-vote-delegate" "$staged"
 mv -f "$staged" "$dest/az-vote-delegate"
@@ -40,7 +45,16 @@ staged=
 printf '\nInstalled az-vote-delegate %s to %s\n' "$version" "$dest/az-vote-delegate"
 printf 'Run %s to open setup and the interactive menu.\n' "$dest/az-vote-delegate"
 printf 'Run it as the user who owns your producer key (use sudo if your node runs as root).\n'
-printf 'For an upgrade, restart the voting service after installation.\n'
+printf 'Existing configuration, voting mode and manual overrides are preserved.\n'
+if [ "$upgrading" = 1 ]; then
+  printf 'The installer does not start another voting service. Restart the existing service to load this version:\n'
+  if [ "$(id -u)" = 0 ]; then
+    printf '  systemctl restart az-vote-delegate.service\n'
+  else
+    printf '  systemctl --user restart az-vote-delegate.service\n'
+  fi
+  printf 'If you run the service in the foreground, stop that process before starting the new version.\n'
+fi
 if [ "${AZ_NO_UI:-0}" != 1 ] && [ -t 2 ] && ( : </dev/tty ) 2>/dev/null; then
   # curl | sh consumes stdin; the menu must read the operator's terminal.
   cleanup

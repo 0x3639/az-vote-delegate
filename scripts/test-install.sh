@@ -32,13 +32,28 @@ while [ "$#" -gt 0 ]; do
 done
 cp "$TEST_ASSETS/${url##*/}" "$out"
 MOCK
+cat > "$work/mocks/systemctl" <<'MOCK'
+#!/bin/sh
+# Installing the binary must not create, start, or restart a service.
+printf '%s\n' "$*" >> "$TEST_SERVICE_CALLS"
+exit 1
+MOCK
 chmod +x "$work/mocks/"*
 export TEST_ASSETS="$work/assets"
+export TEST_SERVICE_CALLS="$work/service-calls"
 PATH="$work/mocks:$PATH" AZ_NO_UI=1 AZ_VERSION=v0.1.0 AZ_INSTALL_DIR="$work/bin" sh "$root/install.sh"
 [ -x "$work/bin/az-vote-delegate" ]
+# A repeat install replaces the old file at the same path and opens the UI,
+# which can reconnect to the existing service instead of creating another one.
+printf 'old executable\n' > "$work/bin/az-vote-delegate"
+PATH="$work/mocks:$PATH" AZ_NO_UI=1 AZ_VERSION=v0.1.0 AZ_INSTALL_DIR="$work/bin" sh "$root/install.sh" > "$work/reinstall-output"
+grep -q 'Existing installation detected' "$work/reinstall-output"
+cmp "$work/package/az-vote-delegate" "$work/bin/az-vote-delegate"
+[ "$(find "$work/bin" -type f | wc -l | tr -d ' ')" = 1 ]
 TEST_INSTALLER="$root/install.sh" PATH="$work/mocks:$PATH" AZ_VERSION=v0.1.0 AZ_INSTALL_DIR="$work/bin" python3 scripts/test-install-tty.py "$work"
 printf 'existing binary\n' > "$work/bin/az-vote-delegate"
 printf 'corrupted\n' >> "$work/assets/az-vote-delegate_linux_amd64.tar.gz"
 if PATH="$work/mocks:$PATH" AZ_VERSION=v0.1.0 AZ_INSTALL_DIR="$work/bin" sh "$root/install.sh"; then echo 'Corrupt archive was accepted' >&2; exit 1; fi
 [ "$(cat "$work/bin/az-vote-delegate")" = 'existing binary' ]
-echo 'Installer success and checksum-failure checks passed.'
+[ ! -e "$TEST_SERVICE_CALLS" ]
+echo 'Installer, repeat-install replacement, no service creation, and checksum-failure checks passed.'

@@ -3,6 +3,7 @@ package delegate
 import (
 	"context"
 	"errors"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -402,5 +403,76 @@ func TestAppManualResetAndFailures(t *testing.T) {
 	e.DryRun = true
 	if err := e.QueueManual(context.Background(), ds[0], testID, No); err == nil {
 		t.Fatal("dry-run accepted a manual vote")
+	}
+}
+
+// Manual control is scoped to pillar + request ID, not to the whole service or
+// to every phase of the same project. Exercise disk reloads and elapsed time.
+func TestManualOverridesPersistWhileOtherRequestsKeepCopying(t *testing.T) {
+	e, f, ds := fixture()
+	project := strings.Repeat("1", 64)
+	manualPhase := strings.Repeat("2", 64)
+	copiedPhase := strings.Repeat("3", 64)
+	otherProject := strings.Repeat("4", 64)
+	f.vs = []Votable{
+		{ID: project, Kind: "project"},
+		{ID: manualPhase, Kind: "phase", ProjectID: project},
+		{ID: copiedPhase, Kind: "phase", ProjectID: project},
+		{ID: otherProject, Kind: "project"},
+	}
+	for _, v := range f.vs {
+		f.votes["B"][v.ID] = ptr(Yes)
+	}
+	path := filepath.Join(t.TempDir(), "state.json")
+	save := func(s *State) error { return SaveState(path, s) }
+	e.Save = save
+	for _, id := range []string{project, manualPhase} {
+		if err := e.QueueManual(context.Background(), ds[0], id, No); err != nil {
+			t.Fatal(err)
+		}
+	}
+	restart := func() {
+		t.Helper()
+		state, err := LoadState(path, 1)
+		if err != nil {
+			t.Fatal(err)
+		}
+		// Create a new worker, rather than retaining any in-memory override state.
+		e = &Engine{Backend: f, State: state, Save: save, PollInterval: 30 * time.Second, PowTimeout: time.Second}
+	}
+	restart() // Queued intent must survive a restart before the vote is sent.
+	reconcile(t, e, ds)
+	reconcile(t, e, ds)
+	if f.sends != 4 {
+		t.Fatalf("got %d sends, want two manual and two copied votes", f.sends)
+	}
+	restart() // Confirmed overrides must also survive upgrades/restarts.
+	e.Now = func() time.Time { return time.Now().Add(90 * 24 * time.Hour) }
+	for _, v := range f.vs {
+		f.votes["B"][v.ID] = ptr(Abstain)
+	}
+	reconcile(t, e, ds)
+	reconcile(t, e, ds)
+	if f.sends != 6 {
+		t.Fatalf("got %d sends, want only the two copied requests to change", f.sends)
+	}
+	for _, id := range []string{project, manualPhase} {
+		entry := e.State.Entries("A")[id]
+		if !Equal(f.votes["A"][id], ptr(No)) || entry.ManualVote == nil || !entry.ManualConfirmed {
+			t.Fatalf("manual override lost for %s", id)
+		}
+	}
+	for _, id := range []string{copiedPhase, otherProject} {
+		if !Equal(f.votes["A"][id], ptr(Abstain)) || e.State.Entries("A")[id].ManualVote != nil {
+			t.Fatalf("unrelated request %s stopped copying", id)
+		}
+	}
+	// Returning one request to copying leaves the other manual override intact.
+	if err := e.Resume(context.Background(), ds[0], manualPhase); err != nil {
+		t.Fatal(err)
+	}
+	reconcile(t, e, ds)
+	if f.sends != 7 || !Equal(f.votes["A"][manualPhase], ptr(Abstain)) || !Equal(f.votes["A"][project], ptr(No)) {
+		t.Fatal("resuming one request affected another request's override")
 	}
 }
