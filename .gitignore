@@ -4,3 +4,8 @@
 /state.json*
 *.env
 coverage.out
+
+# Documentation site
+/website/node_modules/
+/website/build/
+/website/.docusaurus/

@@ -1,0 +1,77 @@
+@import '@fontsource/space-grotesk/400.css';
+@import '@fontsource/space-grotesk/500.css';
+@import '@fontsource/space-grotesk/600.css';
+@import '@fontsource/space-grotesk/700.css';
+@import '@fontsource/jetbrains-mono/400.css';
+@import '@fontsource/jetbrains-mono/500.css';
+@import './zenon/colors.css';
+@import './zenon/radius.css';
+@import './zenon/elevation.css';
+
+:root {
+  --font-sans: 'Space Grotesk', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+  --ifm-font-family-base: var(--font-sans);
+  --ifm-font-family-monospace: var(--font-mono);
+  --ifm-heading-font-family: var(--font-sans);
+  --ifm-heading-font-weight: 600;
+  --ifm-line-height-base: 1.7;
+  --ifm-global-radius: var(--radius);
+  --ifm-code-border-radius: var(--radius-md);
+  --ifm-button-border-radius: var(--radius);
+  --ifm-color-primary: var(--primary);
+  --ifm-color-success: var(--success);
+  --ifm-color-info: var(--info);
+  --ifm-color-danger: var(--destructive);
+  --ifm-color-warning: var(--warning);
+  --ifm-background-color: var(--background);
+  --ifm-background-surface-color: var(--card);
+  --ifm-font-color-base: var(--foreground);
+  --ifm-color-content-secondary: var(--muted-foreground);
+  --ifm-color-emphasis-300: var(--border);
+  --ifm-toc-border-color: var(--border);
+  --ifm-link-color: var(--info);
+  --ifm-link-hover-color: var(--info);
+  --ifm-navbar-background-color: var(--sidebar);
+  --ifm-footer-background-color: var(--sidebar);
+  --ifm-pre-background: var(--muted);
+  --ifm-menu-color-active: var(--secondary);
+  --docusaurus-highlighted-code-line-bg: var(--accent);
+  --ifm-code-font-size: 0.875em;
+  --ifm-navbar-shadow: none;
+}
+[data-theme='dark'] {
+  --ifm-color-primary: var(--primary);
+  --ifm-background-color: var(--background);
+  --ifm-background-surface-color: var(--card);
+  --ifm-font-color-base: var(--foreground);
+  --ifm-menu-color-active: var(--primary);
+  --ifm-link-color: var(--info);
+  --ifm-pre-background: var(--muted);
+}
+h1 { letter-spacing: -0.035em; font-weight: 700; }
+h2, h3 { letter-spacing: -0.02em; }
+code, pre, kbd, .ledger { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+.ledger { font-size: 0.6875rem; letter-spacing: 0.06em; text-transform: uppercase; font-weight: 500; color: var(--muted-foreground); }
+.navbar { border-bottom: 1px solid var(--border); }
+.navbar__brand { gap: 0.35rem; }
+.navbar__title { font-size: 0.95rem; }
+.navbar__link { font-size: 0.9rem; }
+.navbar__link--active { color: var(--foreground); text-decoration: underline; text-decoration-color: var(--primary); text-decoration-thickness: 2px; text-underline-offset: 6px; }
+.navbar__logo img { width: 30px; height: 30px; }
+.navbar__search-input { border: 1px solid var(--border); border-radius: var(--radius); background-color: var(--background); font-family: var(--font-sans); }
+.theme-doc-sidebar-container { background: var(--sidebar); border-right-color: var(--border) !important; }
+.menu__link--active:not(.menu__link--sublist) { background: var(--accent); color: var(--foreground); box-shadow: inset 2px 0 var(--primary); }
+.breadcrumbs__item--active .breadcrumbs__link { color: var(--foreground); }
+.theme-doc-markdown > h1 { font-size: 2.25rem; }
+.theme-doc-markdown a { text-decoration: underline; text-underline-offset: 3px; }
+.footer { border-top: 1px solid var(--border); background: var(--sidebar); color: var(--foreground); }
+.footer__title, .footer__link-item { color: var(--foreground); }
+.footer__title { font-size: 0.75rem; font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 0.06em; }
+.footer__copyright { color: var(--muted-foreground); font-size: 0.8rem; }
+.footer__link-item { font-size: 0.9rem; }
+a:focus-visible, button:focus-visible, input:focus-visible { outline: 2px solid var(--ring); outline-offset: 4px; }
+.tabs__item { font-size: 0.875rem; padding: 0.6rem 1rem; }
+.tabs__item--active { color: var(--ifm-menu-color-active); border-bottom-color: var(--primary); }
+.alert { border-radius: var(--radius); }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; transition: none !important; animation: none !important; } }
